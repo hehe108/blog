@@ -1,0 +1,146 @@
+好像前几年IOS系统就自带语音识别功能，貌似不错，支持多种语言。我也写段代码试试。
+
+开发环境
+
+Xcode Version 9.3 (9E145)
+
+IOS 11.3.1 (15E302)
+
+
+
+实现步骤如下
+
+1.打开Xcode 新建新项目 IOS  Single View App
+
+2.Info.plist 添加  麦克风  跟 语音识别权限
+
+Privacy - Microphone Usage Description
+
+Privacy - Speech Recognition Usage Description
+
+3.Main.storyboard 拖入 Button 跟 Text View
+
+4.ViewController.m中添加
+
+头文件
+
+#import <Speech/Speech.h>
+
+属性代码
+
+@interface ViewController ()
+@property (weak, nonatomic) IBOutlet UITextView *textView;
+@property (weak, nonatomic) IBOutlet UIButton *recordButton;
+
+@end
+
+字段代码
+
+@implementation ViewController {
+
+    AVAudioEngine * audioEngine ;
+
+}
+
+5.ViewController.m中添加
+
+页面载入代码
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    [SFSpeechRecognizer requestAuthorization:^(SFSpeechRecognizerAuthorizationStatus authStatus) {
+        if(authStatus==SFSpeechRecognizerAuthorizationStatusAuthorized)
+        {
+            self.recordButton.enabled = true;
+        }
+    }];
+
+}
+
+识别按钮代码
+
+- (IBAction)recordButtonTapped:(id)sender {
+    self.recordButton.enabled=false;
+    SFSpeechRecognizer *speechRecognizer =[[SFSpeechRecognizer alloc]initWithLocale:[NSLocale localeWithLocaleIdentifier:@"th-TH"]];
+    SFSpeechAudioBufferRecognitionRequest *recognitionRequest = [[SFSpeechAudioBufferRecognitionRequest alloc] init];
+    SFSpeechRecognitionTask *recognitionTask;
+    audioEngine = [[AVAudioEngine alloc] init];
+    AVAudioInputNode *inputNode = audioEngine.inputNode;
+    AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+    NSError *error;
+    [audioSession setCategory:AVAudioSessionCategoryRecord error:&error];
+    if (error) {
+        self.textView.text = error.description;
+        return;
+    }
+    [audioSession setMode:AVAudioSessionModeMeasurement error:&error];
+    if (error) {
+        self.textView.text = error.description;
+        return;
+    }
+    [audioSession setActive:TRUE withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&error];
+    if (error) {
+        self.textView.text = error.description;
+        return;
+    }
+    if (!inputNode) {
+        self.textView.text = @"无输入节点";
+        return;
+    }
+    AVAudioFormat *recordingFormat = [inputNode outputFormatForBus:0];
+    [inputNode installTapOnBus:0 bufferSize:1024 format:recordingFormat block:^(AVAudioPCMBuffer *  buffer, AVAudioTime *when) {
+        if (buffer) {
+            [recognitionRequest appendAudioPCMBuffer:buffer];
+        }
+    }];
+    recognitionTask=[speechRecognizer recognitionTaskWithRequest:recognitionRequest resultHandler:^(SFSpeechRecognitionResult *   result, NSError *   error) {
+        bool isFinal=false;
+        if (result) {
+            self.textView.text = result.bestTranscription.formattedString;
+            isFinal=result.isFinal;
+        }
+        if (error) {
+            self.textView.text = error.description;
+        }
+        if(isFinal||error!=nil)
+        {
+            [inputNode removeTapOnBus:0];
+            self.recordButton.enabled = true;
+        }
+    }];
+    [audioEngine prepare];
+    [audioEngine startAndReturnError:&error];
+    if (error) {
+        self.textView.text = error.description;
+        return;
+    }
+
+}
+
+6.Main.storyboard 页面中添加 
+
+Button 的 Touch Up Inside 跟 Referencing Outlets 关联
+
+Text View 的 Referencing Outlets 关联
+
+7.在项目的xcodeproj配置文件中
+
+设置好 Display Name , Bundle Identifier , Signing 
+
+
+
+8.在IOS的通用->设备管理 中信任 开发者证书
+
+
+
+9.运行识别。
+
+
+
+
+
+参考
+
+http://developer.apple.com/documentation
+
+如果你发现有什么不合理的，需要改进的地方，请留言。或者可以通过 328452421#qq.com 联系我，非常感谢。

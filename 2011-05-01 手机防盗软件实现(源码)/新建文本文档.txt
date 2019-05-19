@@ -1,0 +1,173 @@
+前段时间母亲手机遭贼了，以防万一，如果自己手机丢了，肯定会更郁闷，记得很多手机有防盗功能，如果更换了sim卡就会，手机就会自动把新的
+
+sim卡手机号，gps坐标，什么的发送到绑定的手机上。网上查了下资料，这类这类软件也挺多的。看了看功能也不是很复杂，就自己写了个玩玩
+
+。
+
+开发环境 vs2008 wm6   .net cf 3.5
+
+ 
+
+实现方法很简单
+1.每一个sim都有唯一的一个IMSI编号，可以根据IMSI编号来判断手机是否更换sim卡
+2.如果检测到IMSI不是自己的sim卡的，可以确定其他人可能在用你的手机。
+3.每次开机程序自动运行，检测到别人如果使用你的手机，自动把他的通话记录，跟gps坐标发送到绑定好的手机号上。
+4.知道用你手机人的手机号，最近通话记录，gps坐标后，再自己想办法找到这人吧。
+
+ 
+
+具体代码
+1.取sim卡IMSI编号
+使用 TapiLib.dll类库中的ControlTapi.GetIMSINumber()取到sim卡imsi编号
+2.判断是不是自己的sim卡
+            string simStr=ControlTapi.GetIMSINumber();
+            if (simStr.Length != 0)
+            {
+                if (simStr != SIM)
+                {
+其中SIM为事先取好的自己手机卡的IMSI编号
+
+3.取最近通话记录代码
+        [StructLayout(LayoutKind.Sequential)]
+        public struct CALLLOGENTRY
+        {
+            public UInt32 cbSize;
+            public UInt64 ftStartTime;
+            public UInt64 ftEndTime;
+            public short iom;
+
+            public bool fOutgoing;
+            public bool fConnected;
+            public bool fEnded;
+
+            public bool fRoam;
+            public short cidt;
+            public IntPtr pszNumber;
+            public IntPtr pszName;
+            public IntPtr pszNameType;
+            public IntPtr pszNote;
+        };
+        [DllImport("phone.dll", EntryPoint = "PhoneOpenCallLog", SetLastError = true)] //首先要PhoneOpenCallLog打开通话记录句柄
+        private static extern int PhoneOpenCallLog(ref IntPtr pHandle);
+
+
+        [DllImport("phone.dll", EntryPoint = "PhoneCloseCallLog", SetLastError = true)] //要调用PhoneCloseCallLog关闭句柄
+        private static extern int PhoneCloseCallLog(IntPtr pHandle);
+
+
+        [DllImport("phone.dll", EntryPoint = "PhoneGetCallLogEntry", SetLastError = true)]
+        private static extern int PhoneGetCallLogEntry(IntPtr pHandke, ref CALLLOGENTRY pEntry);
+        //用PhoneGetCallLogEntry方法会返回一个通话记录结构，在该结构中，包含号码、姓名、通话开始时间、通话结束时间等信息。
+
+
+        private string GetLog()
+        {
+            string CallInfo = "";
+
+            try
+            {
+                IntPtr handle = IntPtr.Zero;   //句柄
+
+                CALLLOGENTRY entry = new CALLLOGENTRY();
+                PhoneOpenCallLog(ref handle);   //首先要PhoneOpenCallLog打开通话记录句柄
+                entry.cbSize = (uint)Marshal.SizeOf(entry);   //返回类的非托管大小
+
+                if (handle != IntPtr.Zero)
+                {
+                    while (PhoneGetCallLogEntry(handle, ref entry) == 0)   //获取通话记录
+                    {                       //Marshal.PtrToStringUni   复制指定数目的字符
+                        string phoneNumber = Marshal.PtrToStringUni(entry.pszNumber);   //号码
+                        string name = Marshal.PtrToStringUni(entry.pszName);   //姓名
+
+                        if (phoneNumber == null)
+                        {
+                            phoneNumber = string.Empty;
+                        }
+
+                        if (name == null)
+                        {
+                            name = string.Empty;
+                        }
+
+                        string temp = (phoneNumber.Trim() + name.Trim());
+                        CallInfo = CallInfo + temp;
+                    }
+                    PhoneCloseCallLog(handle);
+
+                    if (CallInfo.Length < 140)
+                    {
+                        return CallInfo;
+                    }
+                    else
+                    {
+                        return CallInfo.Substring(0,140);
+                    }
+                }
+                else
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    return "";
+                }
+            }
+            catch (Exception ep)
+            {
+                //MessageBox.Show(ep.ToString());
+                return "";
+            }
+            finally
+            {
+            }
+            
+        }
+4.取gps坐标代码
+        GpsDeviceState device = null;
+        GpsPosition position = null;
+        Gps gps = new Gps();
+
+        void gps_DeviceStateChanged(object sender, DeviceStateChangedEventArgs args)
+        {
+            device = args.DeviceState;
+        }
+
+        protected void gps_LocationChanged(object sender, LocationChangedEventArgs args)
+        {
+            position = args.Position;
+            str = "";
+            if (position != null)
+            {
+                //维度
+                if (position.LatitudeValid)
+                {
+                    str += position.Latitude;
+                }
+                //经度
+                if (position.LongitudeValid)
+                {
+                    str += " " + position.Longitude;
+
+ 
+
+ 
+
+5.发送短信代码
+                    SmsMessage msg = new SmsMessage(PHONE, str);
+                    msg.Send();
+6.打包为开机启动程序
+打包cab文件时，只需把快捷方式添加到Startup文件夹下面就ok。
+
+ 
+
+不足之处。
+1.gps代码根据sdk中修改的，只是卫星定位的，根据基站定位的代码不知如何实现，只有当使用手机的人走到卫星信号好的地方时才能把坐标发
+
+出去
+2.发送的gps坐标 ,只是一个大体的位置，几百米以内的范围，有些浮动
+3.如果手机被恢复出厂设置，或者被刷机，程序肯定不能运行了
+
+即使gps信号不好的情况下只是得到使用手机人的电话号码，跟通话记录，用处也是挺大的。代码只是写着玩的，提供下参考思路代码
+
+如果你发现有什么不合理的，需要改进的地方，或者你有什么更好的实现方法邮件联系328452421@qq.com（qq常年不在线，邮件联系） 。相互交流 谢谢
+
+ 
+
+源码下载地址  http://download.csdn.net/source/3239409

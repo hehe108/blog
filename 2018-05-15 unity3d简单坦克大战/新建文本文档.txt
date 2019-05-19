@@ -1,0 +1,115 @@
+好久前就想写个3d游戏玩玩, 汗，unity3d不太会用，直到现在才写个3d Demo 玩玩。
+
+开发环境 Unity 2017.3.1f1 Personal    Android.4.4     jdk1.8.0_172
+
+
+
+
+
+
+
+
+实现方法如下
+
+
+1.添加摄像机
+2.创建自己的坦克
+3.创建敌方坦克Prefab
+4.创建子弹Prefab
+5.添加虚拟摇杆
+6.配置环境，参数，运行
+
+
+
+
+具体实现代码
+1.摄像机跟随代码
+	void LateUpdate () {
+		if(t!=null)
+		transform.position = t.position;
+	}
+2.控制自己坦克的代码
+	if(Input.GetKey(KeyCode.W)){
+		transform.Translate(Vector3.forward * Time.deltaTime * 8);
+	} else if(Input.GetKey(KeyCode.S)){
+		transform.Translate(Vector3.forward * Time.deltaTime * -8);
+	}else if(Input.GetKey(KeyCode.A)){
+		transform.Rotate(Vector3.up * Time.deltaTime * -80);
+	}else if(Input.GetKey(KeyCode.D)){
+		transform.Rotate(Vector3.up * Time.deltaTime * 80);
+	}			
+	if (Input.GetKey (KeyCode.Return)||j == true) {
+		UseSkill ();
+	}
+	OutBoundary (transform);
+	public void UseSkill( )
+	{
+		if (currentCoolDown >= 1)
+		{
+			Vector3 vvvv = new Vector3 ();
+			vvvv.y = transform.position.y + 1;
+			vvvv.z = transform.position.z + 0;   
+			vvvv.x = transform.position.x;
+			m.tag = "GOOD";
+			GameObject clone = Instantiate (m, vvvv, transform.rotation);
+			clone.GetComponent<Rigidbody> ().velocity = transform.forward * 30;
+			currentCoolDown = 0;
+		}
+	}
+
+3.
+
+初始化敌方坦克
+
+		for (int i = 0; i < 10;i++ )
+			Instantiate(enemy, new Vector3( Random.Range(-45, 45), 0, 25), Quaternion.Euler(0, 0, 0));
+
+控制敌方坦克代码
+
+	void Update () {
+		switch (iii) {
+		case 2:
+			transform.Rotate (Vector3.up * Time.deltaTime * -80);
+			break;
+		case 3:
+			transform.Rotate (Vector3.up * Time.deltaTime * 80);
+			break;
+		default:
+			break;
+		}
+		transform.Translate (Vector3.forward*Time.deltaTime*8);
+		if(Random.Range(0,200)>198)
+		{
+				Vector3 vvvv = new Vector3 ();
+				vvvv.y = transform.position.y + 1;
+				vvvv.z = transform.position.z + 0;    
+				vvvv.x = transform.position.x;
+				m.tag="BAD";
+				GameObject clone = Instantiate (m, vvvv, transform.rotation);
+				clone.GetComponent<Rigidbody> ().velocity = transform.forward * 30;
+		}
+		OutBoundary (transform);
+	}
+4.控制子弹移动代码
+				GameObject clone = Instantiate (m, vvvv, transform.rotation);
+				clone.GetComponent<Rigidbody> ().velocity = transform.forward * 30;
+5.虚拟摇杆用的Unity   里面自带的 Assets-Import Package-CrossPlatformInput 
+		float h = CrossPlatformInputManager.GetAxis("Horizontal");
+		float v=CrossPlatformInputManager.GetAxis("Vertical");
+		bool j = CrossPlatformInputManager.GetButton ("Jump");
+		transform.LookAt(new Vector3(transform.position.x + h, transform.position.y, transform.position.z + v));  
+		if(h!=0||v!=0)
+			transform.Translate(Vector3.forward * Time.deltaTime * 8.0f); 
+6.
+在unity Preferences-External Tools-Android 配置好  SDK，JDK
+在File-Build Settings-Player Settings中配置好 Allowed Orientations for Auto Rotation 跟 Identification Package Name
+点击Build 生成APK 文件 放android手机上运行
+
+
+
+
+
+
+参考
+http://docs.unity3d.com/
+如果你发现有什么不合理的，或者需要改进的地方，请留言。或者可以通过 328452421#qq.com 联系我，非常感谢。

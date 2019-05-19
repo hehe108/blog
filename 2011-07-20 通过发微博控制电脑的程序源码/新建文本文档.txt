@@ -1,0 +1,144 @@
+前段时间看群里挺多讨论 微博api，正好前几天看到有个微博遥控器这东西，可以通过发微博（手机..........各种终端效果都一样）来控制电脑，看了看实现起来也不怎么复杂，整个这东西玩玩，顺便熟悉熟悉 微博api。
+
+
+
+
+开发环境 vs2010  
+
+
+实现方法很简单
+
+
+1.通过api取最新的一条微博
+2.通过微博的内容控制电脑做相关操作 如：关机，取消关机，重启，摄像头截图，屏幕截图等
+
+
+
+
+
+使用方法
+
+1.运行QAPITool.exe后点确定（里面的appkey appsecret最好是自己在腾讯微博应用开发页面自己申请）
+
+
+
+
+
+ 2.在打开的授权页面中输入你的腾讯微博账号
+
+
+
+
+
+
+
+3.把的到的授权码输入到文本框里面
+
+
+
+4.点击开启
+
+
+
+5.之后就可以通过你的微博输入相关命令（关机，取消关机，重启，摄像头截图，屏幕截图）来控制电脑了
+
+
+
+
+
+
+
+
+
+具体实现代码
+
+1.下载腾讯微博C# sdk     ，有个api调试工具，方便调试使用
+
+http://open.t.qq.com/resource.php
+
+
+
+2.添加一个计时器，定时取最后一条微博
+            OauthKey oauthKey = new OauthKey();
+            oauthKey.customKey = appKey;
+            oauthKey.customSecret = appSecret;
+            oauthKey.tokenKey = accessKey;
+            oauthKey.tokenSecret = accessSecret;
+            string ret;
+            UTF8Encoding utf8 = new UTF8Encoding();
+            statuses st = new statuses(oauthKey, "json");
+            ret = st.broadcast_timeline(0, 0, 1, 0);
+
+3.解析返回json数据
+
+            JObject response = JsonConvert.DeserializeObject<JObject>(str);
+            JObject data = JsonConvert.DeserializeObject<JObject>(response["data"].ToString());
+            JObject info = JsonConvert.DeserializeObject<JObject>(data["info"].First.ToString());
+            string id = info["id"].ToString().Replace("\"", "");
+
+3.判断这个微博是不是最新发送的
+从返回的数据中取出  微博id  跟text  里面的数据     ，
+通过比较取出的微博id 跟电脑中保存的id 是否一致来判断是不是新发送的
+如果是新的就执行微博中的控制命令，并更新保存的id
+
+            StringBuilder sb = new StringBuilder(255);
+            GetPrivateProfileString("Config", "ID", "", sb, sb.Capacity, configpath);
+            string oldID = sb.ToString();
+            if (id != oldID)
+            {
+                string text = info["text"].ToString().Replace("\"", "");
+                WritePrivateProfileString("Config", "ID", id, configpath);
+                ProcessCommand(text);
+            }
+
+4.通过这条微博控制电脑做相关操作
+5.重启代码
+            Process.Start("shutdown", "-r -f -t 300");
+6.关机代码
+            Process.Start("shutdown", "-s -f -t 300");
+
+取消关机
+
+Process.Start("shutdown", "-a");
+
+7.屏幕截图
+
+                    var temp1 = Environment.GetEnvironmentVariable("TEMP");
+                    var picPath1 = string.Format("{0}\\{1}.jpg", temp1, Guid.NewGuid());
+                    Class1.GetScreen(picPath1);
+                    if (File.Exists(picPath1))
+                        Send(picPath1);
+8.摄像头截图
+                    var temp = Environment.GetEnvironmentVariable("TEMP");
+                    var picPath = string.Format("{0}\\{1}.jpg", temp, Guid.NewGuid());
+                    Class1.GetCamera(picPath, this.pictureBox1);
+                    if(File.Exists(picPath))
+                    Send(picPath);
+                    break;
+
+
+9.把截取到的图片发送到微博上
+
+         OauthKey oauthKey = new OauthKey();
+            oauthKey.customKey = appKey;
+            oauthKey.customSecret = appSecret;
+            oauthKey.tokenKey = accessKey;
+            oauthKey.tokenSecret = accessSecret;
+            t twit = new t(oauthKey, "json");
+
+
+            string ret;
+            ret = twit.add_pic("pic", "127.0.0.1", "", "", file);
+
+
+
+
+如果你发现有什么不合理的，需要改进的地方，邮件联系328452421@qq.com（qq常年不在线，邮件联系）。相互交流 谢谢
+
+ 
+
+
+
+
+
+下载地址   http://download.csdn.net/source/3457382

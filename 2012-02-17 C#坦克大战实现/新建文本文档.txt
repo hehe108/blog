@@ -1,0 +1,527 @@
+记得在大学学java时，同学在下载了很多java的视频，看到里面有些是介绍简单游戏开发的，马士兵老师讲的，挺感兴趣的。一起看了看视频写了写程序。现在毕业了，因为工作中用的是C#，最近很想拿C#把以前写的坦克大战重写下，来熟悉熟悉C#的基本语法。
+
+程序很简单，跟java代码相比没有多大改动
+
+实现方法如下
+
+1.在form中添加一个panel，在panel的 Paint方法中得到Graphics对象 
+
+2.通过Graphics对象再panel画出坦克，子弹等相关内容
+
+3.添加timer控件 来控制panel的重画 实现坦克，子弹的运动
+
+4.根据电脑按下的方向键，确定出坦克的方向，panel重画时根据坦克的方向修改坦克的X，Y轴坐标，来实现坦克的移动
+
+5.通过Rectangle的IntersectsWith函数来进行碰撞检测，实现子弹打击坦克
+
+ 
+
+具体实现代码
+
+1.在项目里面添加枚举类型
+
+    /// <summary>
+
+    /// 表示方向的的枚举类型
+
+    /// </summary>
+
+    public enum Direction { L, U, D, R, STOP }
+
+2.添加子弹类的相关常量，属性
+
+        /// <summary>
+
+        /// 子弹X轴的速度，单位PX
+
+        /// </summary>
+
+        public static int XSPEED = 10;
+
+ 
+
+        /// <summary>
+
+        /// 子弹Y轴的速度，单位PX
+
+        /// </summary>
+
+        public static int YSPEED = 10;
+
+ 
+
+        /// <summary>
+
+        /// 子弹的宽度
+
+        /// </summary>
+
+        public static int WIDTH = 10;
+
+ 
+
+        /// <summary>
+
+        /// 子弹的高度
+
+        /// </summary>
+
+        public static int HEIGHT = 10;
+
+ 
+
+        /// <summary>
+
+        /// 子弹的坐标
+
+        /// </summary>
+
+        int x, y;
+
+ 
+
+        /// <summary>
+
+        /// 子弹的方向
+
+        /// </summary>
+
+        Direction dir;
+
+ 
+
+        /// <summary>
+
+        /// 子弹的存活状态
+
+        /// </summary>
+
+        private bool live = true;
+
+ 
+
+        /// <summary>
+
+        /// TankClient窗体实例
+
+        /// </summary>
+
+        private TankClient tankClient;
+
+ 
+
+        /// <summary>
+
+        /// 敌我双方的标记
+
+        /// </summary>
+
+        private bool good;
+
+3.添加draw方法来画出子弹
+
+        public void Draw(Graphics g)
+
+        {
+
+            if (!live)
+
+            {
+
+                tankClient.missiles.Remove(this);
+
+                return;
+
+            }
+
+            //通过画椭圆函数在界面上显示子弹
+
+            g.FillEllipse(Brushes.Black, x, y, Missile.WIDTH, Missile.HEIGHT);
+
+            Move();
+
+        }
+
+4.添加子弹打击坦克的方法
+
+        public bool HitTank(Tank t)
+
+        {
+
+            //用IntersectsWith来检测两个矩形相碰撞
+
+            if (GetRectangle().IntersectsWith((t.GetRectangle())) && t.Live && this.live && this.good != t.Good)
+
+            {
+
+                t.Live = false;
+
+                this.live = false;
+
+                return true;
+
+            }
+
+            return false;
+
+        }
+
+5.添加坦克类相关属性，常量
+
+ 
+
+        /// <summary>
+
+        /// 坦克x轴的速度
+
+        /// </summary>
+
+        public static int XSPEED = 5;
+
+ 
+
+        /// <summary>
+
+        /// 坦克y轴的速度
+
+        /// </summary>
+
+        public static int YSPEED = 5;
+
+ 
+
+        /// <summary>
+
+        /// 坦克的宽度
+
+        /// </summary>
+
+        public static int WIDTH = 30;
+
+ 
+
+        /// <summary>
+
+        /// 坦克的高度
+
+        /// </summary>
+
+        public static int HEIGHT = 30;
+
+ 
+
+        /// <summary>
+
+        /// 坦克的坐标
+
+        /// </summary>
+
+        private int x, y;
+
+ 
+
+        /// <summary>
+
+        /// 标记上下左右键是否按下
+
+        /// </summary>
+
+        private bool l = false, u = false, r = false, d = false;
+
+ 
+
+        /// <summary>
+
+        /// 坦克的方向
+
+        /// </summary>
+
+        private Direction dir = Direction.STOP;
+
+ 
+
+        /// <summary>
+
+        /// 坦克炮筒方向
+
+        /// </summary>
+
+        private Direction ptDir = Direction.D;
+
+ 
+
+        /// <summary>
+
+        /// TankClient窗体实例
+
+        /// </summary>
+
+        TankClient tankClient;
+
+ 
+
+        /// <summary>
+
+        /// 标记敌我双方
+
+        /// </summary>
+
+        private bool good;
+
+ 
+
+        /// <summary>
+
+        /// 控制敌人坦克不规则运行时使用
+
+        /// </summary>
+
+        private int step = 0;
+
+ 
+
+        /// <summary>
+
+        /// 标记坦克的存活状态
+
+        /// </summary>
+
+        private bool live = true;
+
+6.在tank类中实现画坦克方法
+
+        public void Draw(Graphics g)
+
+        {
+
+            if (!live)
+
+            {
+
+                if (!good)
+
+                {
+
+                    tankClient.tanks.Remove(this);
+
+                }
+
+                return;
+
+            }
+
+            if (good)
+
+            {
+
+                //通过FillEllipse来画坦克
+
+                g.FillEllipse(Brushes.Red, x, y, WIDTH, HEIGHT);
+
+            }
+
+            else
+
+            {
+
+                g.FillEllipse(Brushes.Blue, x, y, WIDTH, HEIGHT);
+
+            }
+
+            //根据炮筒坦克来画出坦克的炮筒
+
+            switch (ptDir)
+
+            {
+
+                case Direction.D:
+
+                    g.DrawLine(Pens.Black, x + WIDTH / 2, y + HEIGHT / 2, x + WIDTH / 2, y + HEIGHT);
+
+                    break;
+
+                case Direction.U:
+
+                    g.DrawLine(Pens.Black, x + WIDTH / 2, y + HEIGHT / 2, x + WIDTH / 2, y);
+
+                    break;
+
+                case Direction.L:
+
+                    g.DrawLine(Pens.Black, x + WIDTH / 2, y + HEIGHT / 2, x, y + HEIGHT / 2);
+
+                    break;
+
+                case Direction.R:
+
+                    g.DrawLine(Pens.Black, x + WIDTH / 2, y + HEIGHT / 2, x + WIDTH, y + HEIGHT / 2);
+
+                    break;
+
+            }
+
+            Move();
+
+        }
+
+7.键盘按键处理的相关代码
+
+        public void KeyPressed(KeyEventArgs e)
+
+        {
+
+            Keys key = e.KeyCode;
+
+            switch (key)
+
+            {
+
+                case Keys.Right:
+
+                    r = true;
+
+                    break;
+
+                case Keys.Left:
+
+                    l = true;
+
+                    break;
+
+                case Keys.Up:
+
+                    u = true;
+
+                    break;
+
+                case Keys.Down:
+
+                    d = true;
+
+                    break;
+
+            }
+
+            LocateDirection();
+
+        }
+
+8.tank发子弹的方法
+
+        public Missile Fire()
+
+        {
+
+            if (!live) return null;
+
+            int x = this.x + WIDTH / 2 - Missile.WIDTH / 2;
+
+            int y = this.y + HEIGHT / 2 - Missile.HEIGHT / 2;
+
+            Missile missile = new Missile(x, y, good, ptDir, tankClient);
+
+            tankClient.missiles.Add(missile);
+
+            return missile;
+
+        }
+
+ 
+
+9.主窗体类加入坦克 
+
+            myTank = new Tank(50, 20, true, this);//放到前面 this不能用  //y轴比java的减少了30
+
+            for (int i = 0; i < 15; i++)
+
+            {
+
+                //添加10个坦克x轴间距为40px
+
+                tanks.Add(new Tank(50+40*(i+1),20,false,this)); //y轴比java的减少了30
+
+            }
+
+10.主窗体类中调用子弹打击坦克的方法
+
+            for (int i = 0; i < missiles.Count; i++)
+
+            {
+
+                Missile m = missiles[i];
+
+                m.HitTank(myTank);
+
+                m.HitTanks(tanks);
+
+                m.Draw(g);
+
+            }
+
+11.主窗体处理按键代码
+
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+
+        {
+
+            myTank.KeyPressed(e);
+
+        }
+
+ 
+
+12.控制重画代码
+
+        private void timer1_Tick(object sender, EventArgs e)
+
+        {
+
+            //间隔50毫秒控制panel的重画
+
+            panel1.Invalidate();
+
+        }
+
+ 
+
+13.这是主要代码基本完成，但是游戏会有闪烁问题
+
+可以通过双缓冲来解决，C#解决时很省事，一个函数就能解决
+
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer |
+
+                    ControlStyles.ResizeRedraw |
+
+                    ControlStyles.AllPaintingInWmPaint, true);
+
+ 
+
+ 
+
+顺便改了个手机版本的但是手机版本的没能解决双缓冲问题，屏幕有些闪烁，朋友们可以自己改进
+
+ 
+
+代码下载   http://files.cnblogs.com/hehe108/tanker.rar
+
+ 
+
+如果你发现有什么不合理的，需要改进的地方，邮件联系328452421@qq.com（qq常年不在线，邮件联系） 。相互交流 谢谢
+
+ 
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+作者：hehe108
+出处：http://www.cnblogs.com/hehe108/ 
+关于作者：菜鸟一枚。如有问题或建议，请多多赐教！ 
+欢迎转载，但未经作者同意必须保留此段声明，且在文章页面明显位置给出原文连接
+如有问题，可以通过   328452421@qq.com    联系我，非常感谢。

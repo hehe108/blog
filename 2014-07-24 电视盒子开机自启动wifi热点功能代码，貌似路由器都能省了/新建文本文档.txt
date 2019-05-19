@@ -1,0 +1,47 @@
+电视盒子开机自启动wifi热点功能代码，貌似路由器都能省了。。。 
+ 现在用有线连网看视频速度要比经过路由器快，用无线做热点，但无线设置热点后，关机或重启又要再重新开启热点，这样比较麻烦，增加上开机自启热点，这样比较方便了，连网速度快看视频不卡其它设备也可以通过盒子上网。 
+ 开发工具 android ADT 
+ 实现方法 1.开启热点 2.开机启动 
+ 
+ 具体代码 1.开启热点 	WifiManager wifiManager;
+wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+Method method = wifiManager.getClass().getMethod("getWifiApState");
+int state = (Integer) method.invoke(wifiManager);
+
+if(state==13||state==12)// 已经开   或者 正在开
+{	
+}else
+
+{
+Toast.makeText(MainActivity.this,"正在开启AndroidAP...", 1).show(); 
+wifiManager.setWifiEnabled(false);
+
+WifiConfiguration apConfig = new WifiConfiguration();
+apConfig.SSID = "AndroidAP";
+apConfig.allowedKeyManagement.set(4);
+apConfig.preSharedKey = "5e8918f37260";
+method = wifiManager.getClass().getMethod("setWifiApEnabled", WifiConfiguration.class, Boolean.TYPE);
+boolean open = (Boolean) method.invoke(wifiManager, apConfig, true);
+} 
+ 
+ AndroidManifest.xml  中增加权限      <uses-permissionandroid:name="android.permission.CHANGE_WIFI_STATE"></uses-permission>    <uses-permissionandroid:name="android.permission.ACCESS_WIFI_STATE"></uses-permission>   
+ 2.开机启动
+ 用了用  <actionandroid:name="android.intent.action.BOOT_COMPLETED"/>  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"></uses-permission>
+ 在我的电视盒子上试了试 发现  偶尔会出现  开机不自动运行的情况 换个思路把 用  <categoryandroid:name="android.intent.category.HOME"/> 替代 电视盒子自带的  桌面 
+ 开启AP热点后再   自动运行盒子自带的桌面 	    ComponentName componet = new ComponentName("com.duokan.duokantv","com.duokan.duokantv.MainActivity");
+        Intent i = new Intent();
+        i.setComponent(componet);
+        startActivity(i);	 
+ 
+ 
+ 
+ 
+ 
+ 使用方法 1.电视盒子连有线网  2.配置好盒子正常上网 3.安装自己写好的程序  
+ 
+ 
+ 
+ 
+ 出处：http://blog.csdn.net/xiaoxiao108
+ 关于作者：菜鸟一枚。如有问题或建议，请多多赐教！ 
+ 欢迎转载，但未经作者同意必须保留此段声明，且在文章页面明显位置给出原文连接

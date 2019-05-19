@@ -1,0 +1,83 @@
+很久很久没写代码了，中间出了好多事情，最近想用python写个识别汉字的程序玩玩。
+
+开发环境 
+macOS 10.13.3     
+Homebrew 1.5.4    tesseract 3.05.01  
+java 9.0.4   jTessBoxEditorFX-2.0-Beta.zip
+Python 3.6.4 
+
+实现方法
+1.
+安装Homebrew 
+ruby -e "$(curl -fsSL http://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+安装 tesseract  语言跟训练工具
+brew install --all-languages --with-training-tools tesseract 
+
+2.
+在Terminal终端里面运行 
+tesseract zhu.png  zhu -l  chi_sim
+识别zhu.png里面的汉字到zhu.txt语言选择中文简体
+
+有些汉字识别不出来，后面需要自己训练
+
+
+
+由于气象木几木勾叉寸艾米莉禾多动罡各乡戈白勺予页蓁则乡吉果存在不石角定′性
+
+3.
+打开 jTessBoxEditorFX.jar
+合并zhu.png为zhu.tif
+4.
+在Terminal终端里面运行 
+tesseract  zhu.tif  zhu  -l chi_sim   makebox  
+生成box文件
+5.
+jTessBoxEditorFX.jar里面打开 zhu.tif  
+校正文字 保存
+
+
+
+6.
+
+在Terminal终端里面依次运行
+
+tesseract  zhu.tif zhu    box.train                 生成train文件     
+unicharset_extractor  zhu.box                     生成unicharset文件
+echo  "zhu  0 0 0 0 0" >  font_properties     设置字体属性貌似font_properties内容为空也可以训练
+shapeclustering  zhu.tr                              生成shapetable
+mftraining  zhu.tr                                      生成pffmtable inttemp
+cntraining  zhu.tr                                      生成 normproto
+7.
+把shapetable  unicharset  inttemp  normproto  pfftable 文件加前缀  zhu.
+8.
+在Terminal终端里面运行
+combine_tessdata zhu.
+合并文件
+把生成的zhu.traineddata放入
+/usr/local/Cellar/tesseract/3.05.01/share/tessdata/目录
+10.
+在Terminal终端里面运行 
+tesseract zhu.png  zhu -l  zhu
+这次都可以识别正确了
+
+11.
+在python中调用
+在Terminal终端里面运行 
+pip3 install pytesseract
+执行下面代码
+
+# -*- coding:utf-8 -*-
+import pytesseract
+from PIL import Image
+
+img = Image.open('./zhu.png')
+out = pytesseract.image_to_string(img,'zhu') 
+print(out) 
+
+
+参考
+
+http://github.com/tesseract-ocr/tesseract/wiki/Training-Tesseract
+
+如果你发现有什么不合理的，需要改进的地方，请留言。或者可以通过 328452421#qq.com 联系我，非常感谢。

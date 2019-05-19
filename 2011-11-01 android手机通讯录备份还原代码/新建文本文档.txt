@@ -1,0 +1,161 @@
+最近想写段android程序玩玩。
+
+
+
+开发环境 eclipse ,android2.2
+
+开发环境搭建
+
+1.先安装jdk
+
+2.下载安装eclipse
+
+3.下载安装android sdk
+
+4.安装eclipse插件  adt
+
+5.配置 Window > Preferences 中的android sdk路径
+
+6.创建 AVD
+
+
+
+ 
+
+实现方法很简单
+1.把通讯录中的联系人，电话号码保存到txt文件中完成备份。
+2.读取txt文件，导入到通讯录完成还原。
+
+ 
+
+具体代码
+1.添加 通讯录读写权限，存储卡写权限
+
+<uses-permission android:name="android.permission.READ_CONTACTS"></uses-permission>
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
+<uses-permission android:name="android.permission.WRITE_CONTACTS"></uses-permission>
+
+2.写文件代码
+
+         File saveFile=new File("/sdcard/test.txt");
+                FileOutputStream outStream;
+try {
+outStream = new FileOutputStream(saveFile);
+       outStream.write(str.getBytes());
+       outStream.close();
+} catch (Exception e) {
+
+
+setTitle(e.toString());
+} 
+
+3.取通讯录联系人
+
+     str="";
+       Cursor cur = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);  
+       if (cur.moveToFirst()) {  
+           int idColumn  = cur.getColumnIndex(ContactsContract.Contacts._ID);  
+           int displayNameColumn = cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME);  
+           do {  
+              String contactId = cur.getString(idColumn);  
+              String disPlayName = cur.getString(displayNameColumn);  
+              str+=disPlayName;
+              int phoneCount = cur.getInt(cur.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER));  
+              if(phoneCount>0){  
+                  Cursor phones = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,null,ContactsContract.CommonDataKinds.Phone.CONTACT_ID+ " = " + contactId, null, null);
+                  int i=0;
+                  String phoneNumber;
+                  if(phones.moveToFirst()){  
+                      do{  
+                       i++;
+                          phoneNumber= phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                          if(i==1)
+                          str=str+","+phoneNumber;
+                          System.out.println(phoneNumber);  
+                      }while(phones.moveToNext());  
+                  }  
+              }  
+              str+="\r\n";
+              } while (cur.moveToNext());  
+       }  
+       }  
+
+
+4.读文件代码
+
+         try {
+              File file = new File("/sdcard/test.txt");
+
+            FileInputStream inStream = new FileInputStream(file);
+
+          ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+
+          byte[] buffer = new byte[1024*5];
+
+          int length = -1;
+
+          while((length = inStream.read(buffer)) != -1 ){
+
+           outStream.write(buffer, 0, length);
+
+          }
+
+          outStream.close();
+
+          inStream.close();
+
+          String txt= outStream.toString();
+
+   } catch (IOException e){
+             setTitle(e.toString());
+
+         }
+
+
+
+5.写通讯录
+
+     ContentValues values = new ContentValues();
+    Uri rawContactUri = getContentResolver().insert(RawContacts.CONTENT_URI, values);
+
+    long rawContactId = ContentUris.parseId(rawContactUri);
+
+    values.clear();
+
+    values.put(Data.RAW_CONTACT_ID, rawContactId);
+
+    values.put(Data.MIMETYPE, StructuredName.CONTENT_ITEM_TYPE);
+
+    values.put(StructuredName.GIVEN_NAME, name);
+
+    getContentResolver().insert(Data.CONTENT_URI, values);
+
+     values.clear();
+
+    values.put(Data.RAW_CONTACT_ID, rawContactId);
+
+    values.put(Data.MIMETYPE, Phone.CONTENT_ITEM_TYPE);
+
+    values.put(Phone.NUMBER, num);
+
+    values.put(Phone.TYPE, Phone.TYPE_HOME);
+
+    getContentResolver().insert(Data.CONTENT_URI, values);
+
+
+
+
+
+
+
+
+
+
+
+
+
+如果你发现有什么不合理的，需要改进的地方，或者你有什么更好的实现方法邮件联系328452421@qq.com（qq常年不在线，邮件联系）  。相互交流 谢谢
+
+ 
+
+源码下载地址 http://download.csdn.net/detail/xiaoxiao108/3741045

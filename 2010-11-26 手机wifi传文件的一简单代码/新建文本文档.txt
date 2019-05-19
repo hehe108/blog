@@ -1,0 +1,155 @@
+手机与笔记本传文件的方法有很多种，如果不方便使用蓝牙，数据线，读卡器时，可以考虑下wifi。
+
+步骤
+
+1.手机先建立一个wifi网络 ssid随便写一个就ok 选中设备到设备 在填写个ip地址，跟子网掩码跟笔记本一个网段就行了
+
+2.vs写个Server段程序，服务端负责接受客户端传过来的文件名，跟文件数据
+
+接收文件名的代码如下
+
+ 
+
+TcpListener server = new TcpListener(3389);
+
+server.Start();
+
+while (true)
+
+{
+
+TcpClient client = server.AcceptTcpClient();
+
+Stream ns = client.GetStream();
+
+StreamReader sr = new StreamReader(ns);
+
+string content = sr.ReadLine();
+
+Console.Write(content);
+
+sr.Close();
+
+ns.Close();
+
+client.Close();
+
+}
+
+接收文件数据的代码类似
+
+#region 传文件代码
+
+TcpListener _server = new TcpListener(3399);
+
+_server.Start();
+
+//while (true)
+
+{
+
+TcpClient _client = _server.AcceptTcpClient();
+
+Stream _ns = _client.GetStream();
+
+Stream _fs = new FileStream(content, FileMode.Create, FileAccess.Write);
+
+int _count = 1024;
+
+byte[] _bytes = new byte[_count];
+
+while (_count != 0)
+
+{
+
+_count = _ns.Read(_bytes, 0, _count);
+
+_fs.Write(_bytes, 0, _count);
+
+}
+
+_fs.Close();
+
+_ns.Close();
+
+_client.Close();
+
+}
+
+#endregion
+
+3.再用vs新建个只能设备程序 作为Client端 负责发送文件名，跟文件数据
+
+发送文件名代码
+
+string url = "f://sun_java_me_sdk-3_0-win.exe";
+
+string fileName = url.Substring(url.LastIndexOf('//')+1);
+
+TcpClient client = new TcpClient();
+
+client.Connect("192.168.1.168", 3389);
+
+Stream ns = client.GetStream();
+
+StreamWriter sw = new StreamWriter(ns);
+
+sw.WriteLine(fileName);
+
+sw.Close();
+
+ns.Close();
+
+client.Close();
+
+ 
+
+发送文件数据代码
+
+#region 传文件
+
+TcpClient _client = new TcpClient();
+
+_client.Connect("192.168.1.168", 3399);
+
+int _count = 1024;
+
+byte[] _bytes = new byte[_count];
+
+Stream _ns = _client.GetStream();
+
+Stream _fs = new FileStream(url, FileMode.Open, FileAccess.Read);
+
+while (_count != 0)
+
+{
+
+_count = _fs.Read(_bytes, 0, _count);
+
+_ns.Write(_bytes, 0, _count);
+
+}
+
+_fs.Close();
+
+_ns.Close();
+
+_client.Close();
+
+#endregion
+
+ 
+
+ 
+
+ 
+
+ 
+
+http://download.csdn.net/source/2861924
+
+
+
+
+
+如果你发现有什么不合理的，需要改进的地方，邮件联系328452421@qq.com（qq常年不在线，邮件联系）  。相互交流 谢谢

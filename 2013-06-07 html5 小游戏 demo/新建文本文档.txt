@@ -1,0 +1,215 @@
+html5 挺火，写个html5游戏玩玩吧，想起cocos2d 貌似各个平台都有，网上找了找，下载了个Cocos2d-html5引擎包。
+
+
+
+开发环境 chrome   Cocos2d-html5 
+
+
+
+游戏地址：http://hehe108.sinaapp.com/cocos2d/
+
+
+
+（adsw回车）
+
+
+
+
+
+
+
+
+实现方法如下
+1.创建好 LayerGradient的子类 （里面放坦克子弹）
+2.重写 onEnter 方法添加一些基本按钮 跟一些初始坦克，子弹
+3.通过schedule方法 控制 坦克 子弹的重画
+4.根据键盘按键（ASWD）确定出坦克的方向，根据坦克的方向修改坦克的X，Y轴坐标，来实现坦克的移动
+5.通过cc.rectIntersectsRect函数来进行碰撞检测，实现子弹打击坦克
+
+
+具体代码
+
+1.在项目里面添加方向
+
+var Direction = { L:0, U:1, D:2, R:3, STOP:4 }; 
+
+2.添加子弹类的相关属性
+
+SPEED:10,
+WIDTH:15,
+HEIGHT:15,
+x:null,
+y:null,
+dir:null,
+live:true,
+tankClient:null, //LayerGradient子类TankClient 的引用
+good:null,
+
+
+3.子弹初始化，重画
+
+    ctor:function (x,y,good,dir,tankClient) {
+        cc.associateWithNative( this, cc.Sprite );
+this.x=x;
+this.y=y;
+this.dir=dir;
+this.tankClient=tankClient;
+this.good=good;
+this.initWithFile(s_missile);
+this.setPosition( cc.p(this.x, this.y) );
+this.tankClient.addChild(this);
+    },
+Draw:function(){
+if(!this.live){
+            this.tankClient.removeChild(this, true);
+            return; 
+}
+this.setPosition( cc.p(this.x, this.y) );
+this.Move();
+},
+
+
+4.添加子弹打击坦克的方法
+
+
+HitTank:function(t){
+if (cc.rectIntersectsRect(this.GetRectangle(), t.GetRectangle()) && t.live && this.live && this.good != t.good){
+            t.live = false;
+            this.live = false;
+            return true;
+        }
+        return false;
+},
+
+
+5.添加坦克类相关属性
+
+SPEED:5,
+WIDTH:58,
+HEIGHT:58,
+x:0,
+y:0,
+l:false,
+u:false,
+r:false,
+d:false,
+dir:Direction["STOP"],
+ptDir:Direction["D"],
+tankClient:null,
+good:null,
+step:0,
+live:true,
+
+
+
+
+6.在tank类中 坦克初始化，重画
+
+    ctor:function (x,y,good,tankClient) {
+        cc.associateWithNative( this, cc.Sprite );
+this.x=x;
+this.y=y;
+this.tankClient=tankClient;
+this.good=good;
+if(good){
+        this.initWithFile(s_tank);
+}else{
+this.initWithFile(s_enemy);
+}
+this.setPosition( cc.p(this.x, this.y) );
+this.tankClient.addChild(this);
+    },
+Draw:function(){
+        if (!this.live){
+            if (!this.good){
+                this.tankClient.removeChild(this, true);
+            }
+            this.tankClient.removeChild(this, true);
+            return; 
+        }
+this.setPosition( cc.p(this.x, this.y) );
+        switch (this.ptDir)
+        {
+            case Direction["D"]:
+                this.setRotation(0); //旋转精灵控制 炮筒方向
+                break;
+            case Direction["U"]:
+                this.setRotation(180); 
+                break;
+            case Direction["L"]:
+                this.setRotation(270); 
+                break;
+            case Direction["R"]:
+                this.setRotation(90); 
+                break;
+        }
+this.Move();
+},
+
+
+7.tank发子弹的方法
+
+
+Fire:function()
+{
+if(!this.live) return null;
+for(var i=0;i<this.tankClient.missiles.length;i++){
+var m = this.tankClient.missiles[i];
+if (m.live == false){
+m.x=this.x;
+m.y=this.y;
+m.live=true;
+m.dir=this.ptDir;
+m.good=this.good;
+this.tankClient.addChild(m);
+return m;
+}
+}
+var missile=new Missile(this.x,this.y,this.good,this.ptDir,this.tankClient);
+this.tankClient.missiles.push(missile);
+return missile;
+}, 
+
+
+8.LayerGradient加入坦克
+
+
+this.tanks = [];
+this.myTank = new Tank(60,20, true, this);
+        for (var i = 0; i < 10; i++){
+this.tanks.push(new Tank(50 + 70 * (i + 1), 420, false, this));
+        } 
+
+
+9.LayerGradient中调用子弹打击坦克的方法
+
+
+for(var i=0;i<this.missiles.length;i++){
+var m = this.missiles[i];
+            m.HitTank(this.myTank);
+            m.HitTanks(this.tanks);
+m.Draw();
+}
+
+
+10.控制坦克移动射击的部分代码
+
+    onKeyUp:function(key) {
+this.myTank.KeyReleased(key);
+    },
+    onKeyDown:function(key) {
+this.myTank.KeyPressed(key);
+    }
+
+
+11.用Ant和compiler合并压缩js后发布到sae
+
+
+
+
+
+代码下载：http://download.csdn.net/detail/xiaoxiao108/5539139
+
+
+
+如果你发现有什么不合理的，需要改进的地方，请留言。或者可以通过 328452421@qq.com 联系我，非常感谢。

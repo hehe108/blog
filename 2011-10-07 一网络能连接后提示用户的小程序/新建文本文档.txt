@@ -1,0 +1,58 @@
+国庆节放假期间整个小区断网4天，家里没办法上网，基本都在家里睡觉。昨天能上网了。最近想写个程序，当局域网出现故障时，家里电脑上有个程序可以在网络修复好后自动提示。
+
+
+开发环境 vs2008  C#
+
+
+
+
+实现方法 程序不断的访问一个网址，没返回数据说明网络故障中，有数据返回说明网络正常，同时提示用户电脑可以上网。
+
+
+具体代码
+
+
+
+
+        static void Main(string[] args)
+        {
+
+
+            Test();
+        }
+        public static void Test()
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create("http://www.baidu.com/");
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                while (true)
+                {
+                    Console.Beep();
+                    Console.Write("111");
+                    Thread.Sleep(1000);
+                }
+            }
+            catch
+            {
+                Test();
+            }
+        }
+
+
+Console.Beep(); 可以使电脑发出报警声音，提示网络故障几经解决，电脑可以正常上网了。
+
+
+使用Console.Beep()首先要调整  pc蜂鸣  的音量
+
+
+
+
+
+
+
+如果你发现有什么不合理的，需要改进的地方，邮件联系328452421@qq.com（qq常年不在线，邮件联系） 。相互交流 谢谢
+
+
+
+下载地址  http://download.csdn.net/detail/xiaoxiao108/3661913

@@ -1,0 +1,84 @@
+简单j2me蓝牙OBEX传文件代码
+最近想写一手机程序实现以下功能，在蓝牙的有效距离内，如果有其他手机的蓝牙设置为可见状态，自己的手机自动向其他手机发送指定的图片。查了下j2me的api发现通过obex对象交换协议比较容易实现。
+实现代码很简单 写个程序 弄个死循环让手机一直搜索周围蓝牙设备，如果发现到周围有蓝牙设备，发送图片。
+步骤如下
+1.初始化蓝牙代码
+LocalDevice local_device = LocalDevice.getLocalDevice();
+DiscoveryAgent disc_agent = local_device.getDiscoveryAgent();
+local_device.setDiscoverable(DiscoveryAgent.LIAC);
+2.搜索周围的蓝牙设备 
+InquiryListener inq_listener = new InquiryListener();
+disc_agent.startInquiry(DiscoveryAgent.LIAC, inq_listener);
+synchronized(inq_listener)
+{
+inq_listener.wait();
+}
+3.遍历所有蓝牙设备，查找每一个蓝牙设备的"OBEX Object Push" (0x1105)服务
+while( devices.hasMoreElements() ) {
+synchronized(serv_listener)
+{
+RemoteDevice rd= (RemoteDevice)devices.nextElement();
+t.setString(rd.getBluetoothAddress());
+Thread.sleep(5000);
+t.setString(rd.getFriendlyName(true));
+Thread.sleep(5000);
+disc_agent.searchServices(null, u,rd, serv_listener);
+serv_listener.wait();
+}
+4.从搜索到的ServiceRecord 中取出连接字符串进行连接
+if (serv_listener.service!=null){
+String url;
+url = serv_listener.service.getConnectionURL(0, false);
+Connection conn = Connector.open(url);
+ClientSession cs=(ClientSession)conn;
+cs.connect(null);
+5.从资源中取出图片发送
+byte filebytes[]=getImageData("/images/leaf.png");
+HeaderSet hs=cs.createHeaderSet();
+hs.setHeader(HeaderSet.NAME,"leaf.png");
+hs.setHeader(HeaderSet.TYPE, "text/plain");
+hs.setHeader(HeaderSet.LENGTH,new Long(filebytes.length));
+Operation putOperation=cs.put(hs);
+OutputStream outputStream=putOperation.openOutputStream();
+outputStream.write(filebytes);
+outputStream.close();
+putOperation.close();
+conn.close();
+6.设备查询类InquiryListener的代码
+class InquiryListener implements DiscoveryListener{
+public Vector cached_devices;
+public InquiryListener() {
+cached_devices = new Vector();
+}
+public void deviceDiscovered( RemoteDevice btDevice, DeviceClass cod ) {
+if( ! cached_devices.contains( btDevice ) ) {
+cached_devices.addElement( btDevice );
+}
+}
+public void inquiryCompleted( int discType ) {
+synchronized(this){ this.notify(); }
+}
+public void servicesDiscovered( int transID, ServiceRecord[] servRecord ) {}
+public void serviceSearchCompleted( int transID, int respCode ) {}
+}
+7.服务查询类ServiceListener的代码
+class ServiceListener implements DiscoveryListener{
+public ServiceRecord service;
+public ServiceListener() { }
+public void servicesDiscovered( int transID, ServiceRecord[] servRecord ) {
+service = servRecord[0]; 
+}
+public void serviceSearchCompleted( int transID, int respCode ) {
+synchronized( this ){ this.notify();}
+}
+public void deviceDiscovered( RemoteDevice btDevice, DeviceClass cod ){}
+public void inquiryCompleted( int discType ){}
+}
+
+ 
+
+下载地址   http://download.csdn.net/source/3079020
+
+ 
+
+如果你发现有什么不合理的，需要改进的地方，邮件联系328452421@qq.com（qq常年不在线，邮件联系） 朱晓 。相互交流 谢谢

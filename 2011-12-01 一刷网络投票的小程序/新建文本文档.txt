@@ -1,0 +1,146 @@
+最近看到网上一投票。
+
+
+
+
+
+下载了个抓包工具
+简单的抓了下数据包。。。内容如下
+POST /Vote_doIP.asp HTTP/1.1
+Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, application/x-shockwave-flash, application/x-ms-application, application/x-ms-xbap, 
+
+
+application/vnd.ms-xpsdocument, application/xaml+xml, */*
+Referer: http://show.qingdaobaby.com/Vote.asp?id=1247
+Accept-Language: zh-cn
+Content-Type: application/x-www-form-urlencoded
+Accept-Encoding: gzip, deflate
+User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 2.0.50727; .NET CLR 3.0.04506.648; .NET CLR 3.5.21022)
+Host: show.qingdaobaby.com
+Content-Length: 59
+Connection: Keep-Alive
+Cache-Control: no-cache
+Cookie: ASPSESSIONIDQQBBTADB=GNKABLHAIHABJFEGDJBHLFAK; cnzz_a634504=4; sin634504=none; rtime=0; ltime=1322322790279; cnzz_eid=99430049-1322321123-; 
+
+
+oesun=vitistime=2011%2D11%2D26+23%3A52%3A15
+
+
+ValidCode=G%26KG&pid=1247&Submitok=%C8%B7%C8%CF%CD%B6%C6%B1
+上面是抓包工具抓到的内容。。
+
+
+从上面的内容可以看出
+
+数据接收页面是这个
+
+http://show.qingdaobaby.com/Vote_doIP.asp
+数据发送页面是
+http://show.qingdaobaby.com/Vote.asp?id=1247
+post的数据是 ValidCode=G%26KG&pid=1247&Submitok=%C8%B7%C8%CF%CD%B6%C6%B1    就是验证码。跟投票的编号 跟按钮的value
+就这些东西
+因为这个系统需要验证码 又找了下验证码的地址
+http://show.qingdaobaby.com/getcode.asp  
+
+
+要解决的问题有
+1.验证码问题
+只要不第二次访问getcode.asp页面，服务器session中存的验证码不变。（有些网站比较完验证码后，不把session里的验证码清空）
+2.ip地址限制问题
+adsl网络换ip很容易
+用web代理也可以
+
+
+
+
+开发工具vs2008
+ 
+
+
+主要代码
+
+
+1.得到cookie的代码
+        public void  GetSession(string url)
+        {
+            cc = new CookieContainer();       
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            request.CookieContainer = cc;
+            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+            cc.Add(response.Cookies);
+        }
+2.取出当前cookie的验证码内容把它显示到  pictureBox中
+
+
+            string url = "http://show.qingdaobaby.com/getcode.asp";
+            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
+            request.CookieContainer = cc;
+            HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+            System.IO.Stream responseStream = response.GetResponseStream();
+            this.pictureBox1.Image = Image.FromStream(responseStream);
+
+
+3.可以输入验证码发送post请求了 session不过期，验证码是同一个 ，post代码
+                    ASCIIEncoding encoding = new ASCIIEncoding();
+                    
+                    string postData = "ValidCode=" + this.textBox2.Text + "&pid=1247";
+                    byte[] data = encoding.GetBytes(postData);
+                    HttpWebRequest myRequest = (HttpWebRequest)WebRequest.Create("http://show.qingdaobaby.com/Vote_doIP.asp");
+                    myRequest.Method = "POST";
+                    myRequest.ContentType = "application/x-www-form-urlencoded";//这个必须要加
+                    myRequest.ContentLength = data.Length;
+                    myRequest.Referer = "http://show.qingdaobaby.com";
+                    myRequest.CookieContainer = cc;
+                    Stream newStream = myRequest.GetRequestStream();
+                    newStream.Write(data, 0, data.Length);
+                    newStream.Close();
+                    HttpWebResponse myResponse = (HttpWebResponse)myRequest.GetResponse();
+                    StreamReader reader = new StreamReader(myResponse.GetResponseStream(), Encoding.Default);
+                    string content = reader.ReadToEnd();
+4.adsl网络下可以用dos命令rasdial 来换ip
+        private void com(string command)
+        {
+            System.Diagnostics.Process p = new System.Diagnostics.Process();
+            p.StartInfo.FileName = "cmd.exe";
+            p.StartInfo.Arguments = "/c " + command;
+            p.StartInfo.CreateNoWindow =true;
+            //MessageBox.Show(arg);
+            //下面两句必须加
+            p.StartInfo.UseShellExecute = false;
+            p.StartInfo.RedirectStandardOutput = true;
+            p.Start();
+            string output = p.StandardOutput.ReadToEnd();
+            //MessageBox.Show(output);
+            //Console.WriteLine(output);
+        }
+
+
+                    Thread.Sleep(1000);
+                    com("rasdial  \"test\"  /DISCONNECT"); //断开adsl连接
+                    Thread.Sleep(1000);
+                    com("rasdial  \"test\"  XXXXXX    XXXXXX"); //adsl连接名称，用户名，密码。
+                    Thread.Sleep(10000);
+
+
+5.通过代理可以用下面的代码
+            WebProxy proxy = new WebProxy("xxxxxxxx", 80);
+            request.Proxy = proxy;
+
+
+
+
+
+
+使用方法 ：先点“得到cookie按钮”，再点“取验证码”，在文本框里输入输入验证码后，最后点“自动投票”。
+
+
+
+
+
+如果你发现有什么不合理的，需要改进的地方，或者你有什么更好的实现方法邮件联系328452421@qq.com（qq常年不在线，邮件联系） 朱晓 。相互交流 谢谢
+
+
+
+
+
+源码下载地址  http://download.csdn.net/detail/xiaoxiao108/3864961  根据需要自己修改源码

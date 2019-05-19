@@ -1,0 +1,58 @@
+最近可以从网上下载到很多数据库，下载下来都是txt的，不方便查询，写了个小程序把txt数据导入到sql里面
+
+
+
+环境 vs2008  SQL2000     
+
+
+
+实现方法很简单
+
+1.读出txt中的每一行。
+
+2.从每一行中分出用户名账号密码。
+
+3.把每一条数据插入到sql中
+
+
+
+具体代码
+
+
+
+            string[] strs = File.ReadAllLines("F:\\db.txt");
+            MessageBox.Show("共" + strs.Length + "条数据");
+            this.progressBar1.Maximum = strs.Length;
+            int count = 0;
+            foreach (string str in strs)
+            {
+                try
+                {
+                    string[] arr = Regex.Split(str, " # ", RegexOptions.None);// 比如txt中每行数据使用 # 分割的
+                    Result rs = new Result();
+                    rs.Value1 = "xxxx数据库";
+                    rs.Value2 = arr[0];
+                    rs.Value3 = arr[1];
+                    rs.Value4 = arr[2];
+                    ResultManager.AddResult(rs);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(str + "    " + ex.ToString());
+                }
+
+
+                count++;
+                this.progressBar1.Value = count;
+
+
+            }
+            MessageBox.Show("OK");
+
+
+
+
+
+
+
+源码下载地址     http://download.csdn.net/detail/xiaoxiao108/3994696  根据需要自己修改源码

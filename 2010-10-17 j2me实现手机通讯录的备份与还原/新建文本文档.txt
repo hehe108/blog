@@ -1,0 +1,108 @@
+现在用的手机用了4年半了，其中摔过n次，但是从没坏过，现在还活的好好的。最近想换个windows系统版本的手机。换手机前，先再折腾折腾这个老手机吧，老手机手机只支持j2me。就用它备份下通讯录吧。备份手机通讯录的步骤分以下几步
+
+1.通过j2me的pim相关函数把通讯录内容存入字符串中
+
+        String name="";
+        String tel="";
+        String dis="";
+        PIM pim = PIM.getInstance();
+        ContactList contactList = null;
+        Enumeration em = null;
+        try {
+            contactList = (ContactList) pim.openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE);
+            em=contactList.items();
+            while(em.hasMoreElements())
+            {
+                Contact contact=(Contact)em.nextElement();
+                name=contact.getString(Contact.FORMATTED_NAME, 0);
+                dis=dis+name+",";
+                tel=contact.getString(Contact.TEL, 0);
+                dis=dis+tel+"/n";
+            }
+        } catch (PIMException ex) {
+            ex.printStackTrace();
+        }
+
+2.通过j2me的FileConnection 完成通讯录的保存工作
+
+        FileConnection fc;
+        try {
+            String elem = null;
+            Enumeration e = FileSystemRegistry.listRoots();
+            while (e.hasMoreElements()) {
+                elem = e.nextElement().toString();
+            }
+            System.out.println("::"+elem);
+            //fc = (FileConnection) Connector.open("file://localhost/" + elem+"/a.txt");
+            fc = (FileConnection) Connector.open("file://localhost/c/mobile/video/a.txt");
+            if (!fc.exists()) {
+                fc.create();
+                OutputStream is = fc.openOutputStream();
+                is.write(dis.getBytes("UTF-8"), 0, dis.getBytes("UTF-8").length);
+                is.flush();
+                is.close();
+            }
+        } catch (Exception e) {
+            t.setString(e.toString());
+        }
+
+这样通讯录的内容已经保存到   a.txt  ，把它存入电脑就完成了保存工作
+
+这样如果换了新手机就直接可以用a.txt 文件来还原通讯录了
+
+还原的时候只需通过FileConnection 读取备份的文件，还原到手机通讯录就ok了 主要代码如下
+
+        FileConnection fc;
+        String s="";
+        try {
+            String elem = null;
+            Enumeration e = FileSystemRegistry.listRoots();
+            while (e.hasMoreElements()) {
+                elem = e.nextElement().toString();
+            }
+            System.out.println("::"+elem);
+            //fc = (FileConnection) Connector.open("file://localhost/" + elem+"/a.txt");
+            fc = (FileConnection) Connector.open("file://localhost/c/mobile/video/a.txt");
+            if (!fc.exists())
+            {
+                throw new IOException("File does not exists");
+            }
+            if (fc.exists())
+            {
+                InputStream  is = fc.openInputStream();
+                byte[] b = new byte[1024*5];
+                int length = is.read(b, 0, 1024*5);
+                is.close();
+                fc.close();
+                if(length > 0)
+                {
+                    s=new String(b, 0,1024*5,"UTF-8");
+                    String [] str=split(s,"/n");
+                    for(int i=0;i<str.length;i++)
+                    {
+                        if(str[i].indexOf(",")>=0)
+                         {
+                             String [] NameAndTel=split(str[i],",");
+                             PIM pim = PIM.getInstance();
+                             ContactList  contactList = (ContactList) pim.openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE);
+                             PIMItem item = null;
+                             item = ((ContactList) contactList).createContact ();
+                             item.addString(Contact.FORMATTED_NAME, PIMItem.ATTR_NONE, NameAndTel[0]);
+                             item.addString (Contact.TEL, PIMItem.ATTR_NONE, NameAndTel[1]);
+                             item.commit();
+                         }
+                    }
+
+                }
+            }
+        } catch (Exception e) {
+            t.setString(e.toString());
+        }
+
+源码下载  http://download.csdn.net/source/2763205
+
+
+
+
+
+如果你发现有什么不合理的，需要改进的地方，邮件联系328452421@qq.com（qq常年不在线，邮件联系）  。相互交流 谢谢

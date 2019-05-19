@@ -1,0 +1,379 @@
+简单C#信息采集工具实现
+
+最近想整只爬虫玩玩，顺便熟悉下正则表达式。
+
+ 
+
+开发环境 vs2008  sql2000
+
+实现方法如下
+
+1.先抓取网页代码
+
+2.通过正则匹配出你需要的内容
+
+比如http://www.soso.com/q?w=%C4%E3%BA%C3&pg=1  页面中 搜索结果的标题跟连接地址。具体可以根据你的需要填写合适的地址跟正则。
+
+3.把匹配出的内容保存到数据库中。对其中的数据可以根据需要自己进行处理
+
+ 
+
+ 
+
+具体实现代码
+
+1.读取网页的代码
+
+        public static string GetDataFromUrl(string url)
+
+        {
+
+            string str = string.Empty;
+
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+
+            //设置Http头；
+
+            request.AllowAutoRedirect = true;
+
+            request.AllowWriteStreamBuffering = true;
+
+            request.Referer = "";
+
+            request.Timeout = 10 * 1000;
+
+            //request.UserAgent = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; SV1; .NET CLR 1.1.4322; .NET CLR 2.0.50727; .NET CLR 3.0.04506.648; .NET CLR 3.5.21022)";
+
+            HttpWebResponse response = null;
+
+            try
+
+            {
+
+                response = (HttpWebResponse)request.GetResponse();
+
+                if (response.StatusCode == HttpStatusCode.OK)
+
+                {
+
+                    //根据http应答头来判别编码
+
+                    string Characterset = response.CharacterSet;
+
+                    Encoding encode;
+
+                    if (Characterset != "")
+
+                    {
+
+                        if (Characterset == "ISO-8859-1")
+
+                        {
+
+                            Characterset = "gb2312";
+
+                        }
+
+                        encode = Encoding.GetEncoding(Characterset);
+
+                    }
+
+                    else
+
+                    {
+
+                        encode = Encoding.Default;
+
+                    }
+
+                    //声明一个内存流来贮存http应答流
+
+                    Stream Receivestream = response.GetResponseStream();
+
+                    MemoryStream mstream = new MemoryStream();
+
+                    byte[] bf = new byte[255];
+
+                    int count = Receivestream.Read(bf, 0, 255);
+
+                    while (count > 0)
+
+                    {
+
+                        mstream.Write(bf, 0, count);
+
+                        count = Receivestream.Read(bf, 0, 255);
+
+                    }
+
+                    Receivestream.Close();
+
+                    mstream.Seek(0, SeekOrigin.Begin);
+
+                    //从内存流里读取字符串这里涉及到了编码方案
+
+                    StreamReader reader = new StreamReader(mstream, encode);
+
+                    char[] buf = new char[1024];
+
+                    count = reader.Read(buf, 0, 1024);
+
+                    while (count > 0)
+
+                    {
+
+                        str += new string(buf, 0, 1024);
+
+                        count = reader.Read(buf, 0, 1024);
+
+ 
+
+                    }
+
+                    reader.Close();
+
+                    mstream.Close();
+
+ 
+
+ 
+
+ 
+
+                }
+
+ 
+
+            }
+
+            catch (Exception ex)
+
+            {
+
+ 
+
+                GetDataFromUrl(url);
+
+ 
+
+            }
+
+            finally
+
+            {
+
+                if (response != null)
+
+                    response.Close();
+
+            }
+
+ 
+
+            return str;
+
+        }
+
+2.正则匹配的代码
+
+ 
+
+       public static ArrayList GetString(string reg, string content)
+
+        {
+
+            Regex r = new Regex(reg, RegexOptions.Compiled);
+
+            MatchCollection matches = r.Matches(content);
+
+ 
+
+            ArrayList a = new ArrayList();
+
+            foreach (Match m in matches)
+
+            {
+
+                string[] arr = new string[10];
+
+                arr[0] = m.Groups[1].Value;
+
+                arr[1] = m.Groups[2].Value;
+
+                arr[2] = m.Groups[3].Value;
+
+                arr[3] = m.Groups[4].Value;
+
+                arr[4] = m.Groups[5].Value;
+
+                arr[5] = m.Groups[6].Value;
+
+                arr[6] = m.Groups[7].Value;
+
+                arr[7] = m.Groups[8].Value;
+
+                arr[8] = m.Groups[9].Value;
+
+                arr[9] = m.Groups[10].Value;
+
+                a.Add(arr);
+
+            }
+
+            return a;
+
+        }
+
+ 
+
+3.如果抓取的页面很多 ，可以把多线程跟队列应用过来，提高抓取效率
+
+ 
+
+        Queue<int> numbers = new Queue<int>();
+
+        const int MaxCount = 5;//同时运行的最多线程数
+
+        private static object _lock = new object();
+
+        private void Test()
+
+        {
+
+            while (true)
+
+            {
+
+                int i = 0;
+
+                lock (_lock)
+
+                {
+
+                    if (numbers.Count == 0)
+
+                    {
+
+                        flag = false;
+
+                        return;
+
+                    }
+
+                    i = numbers.Dequeue();
+
+                }
+
+                f(i);
+
+            }
+
+        }
+
+        void Ssss()
+
+        {
+
+            for (int i = 1; i <= 100; i++)//处理的页面参数  从http://www.soso.com/q?w=你好&pg=1  到http://www.soso.com/q?w=你好&pg=100
+
+            {
+
+                numbers.Enqueue(i);
+
+            }
+
+            for (int i = 0; i < MaxCount; i++)
+
+            {
+
+                Thread thread = new Thread(new ThreadStart(Test));
+
+                thread.Name = "T" + i.ToString();
+
+                thread.Start();
+
+            }
+
+        }
+
+        private void f(int num)
+
+        {
+
+            string str = ClassLibrary1.Class1.GetDataFromUrl("http://www.soso.com/q?w=%C4%E3%BA%C3&pg="+num);
+
+            string reg = "<a href=/"([^/"]+?)/" [^>]+? target=/"_blank/">([//s//S]+?)</a>";
+
+            ArrayList a = ClassLibrary1.Class1.GetString(reg, str);
+
+            for (int i = 0; i < a.Count; i++)
+
+            {
+
+                string[] arr = (string[])a[i];
+
+                Result r = new Result();
+
+                r.Value1 = arr[0];
+
+                r.Value2 = ClassLibrary1.Class1.Html2Txt(arr[1]);
+
+                ResultManager.AddResult(r);
+
+            }
+
+        }
+
+5.常用的一些正则表达式
+
+*  0-多个
+
+?  0-1个
+
++  1-多个
+
++? 尽可能少的匹配
+
+*? 0次或多次，尽可能少
+
+/w   等效于 [a-zA-Z_0-9]
+
+/W   匹配非单词
+
+/S   非空
+
+/s   等效于 [ /f/n/r/t/v] 空格，制表  换页
+
+.   匹配除了换行以为的任何字符
+
+/d    数字
+
+[^>]  除了>以为的字符
+
+[/u4e00-/u9fa5] 汉字
+
+ 
+
+6.代码只是实现了信息采集的主要功能，根据你自己的需要更换采集页面，跟合适的正则表达式后，可以根据你的需要自动进行采集，对采集到的数据，再根据你的需要自己进行处理。
+
+7.数据库操作部分用的3层代码生成器连接地址  在 app.config中
+
+ 
+
+ 
+
+ 
+
+ 
+
+如果你发现有什么不合理的，需要改进的地方，邮件联系328452421@qq.com（qq常年不在线，邮件联系）相互交流 谢谢
+
+ 
+
+
+
+ 
+
+ 
+
+下载地址   http://download.csdn.net/source/3329838

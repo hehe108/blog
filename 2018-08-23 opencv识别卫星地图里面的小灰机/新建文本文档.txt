@@ -1,0 +1,120 @@
+最近对opencv比较感兴趣，她实现了图像处理和计算机视觉方面的很多通用算法，功能挺多的。写个识别卫星地图里面飞机的小程序跑一跑。
+
+开发环境
+
+Python 3.6.3
+
+OpenCV 3.4.2
+
+macOS High Sierra 10.13.6
+
+实现方法如下
+
+1.先准备一些正样本，包含飞机的图片，到谷歌地图里面截图就可以。
+
+2.准备一些负样本，不包含飞机的图片，到谷歌地图里面截图就可以。
+
+3.计算正负样本灰度图的HOG。
+
+4.把计算后的HOG放入SVM分类器中进行训练。
+
+5.把训练结果保存到xml文件中
+
+6.用训练好的数据进行目标检测
+
+实现步骤跟代码
+
+1.准备正样本
+
+
+2.负样本
+
+
+3.计算HOG
+
+    samples=[]
+    winSize = (64,64)
+    blockSize = (16,16)
+    blockStride = (8,8)
+    cellSize = (8,8)
+    nbins = 9
+    derivAperture = 1
+    winSigma = 4.
+    histogramNormType = 0
+    L2HysThreshold = 2.0000000000000001e-01
+    gammaCorrection = 1 
+    nlevels = 64
+    computeHOGs = cv.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma,
+                            histogramNormType,L2HysThreshold,gammaCorrection,nlevels)
+
+    print("Positive images are being loaded...", end="")
+    rootdir="/Users/hello/Desktop/Dataset/pos"
+    list = os.listdir(rootdir)  
+    for i in range(0,len(list)):
+           path = os.path.join(rootdir,list[i])
+           if os.path.isfile(path)  and   path.lower().find('.png') > -1 :
+                img=cv.imread(path) 
+                cv.imshow( "image", img );
+                cv.waitKey( 1 );
+
+                roi=cv.resize(img,(64,64),0,0,cv.INTER_LINEAR_EXACT)
+                gray= cv.cvtColor(roi, cv.COLOR_BGR2GRAY)
+                descriptors = computeHOGs.compute(gray) 
+                samples.append(descriptors)
+
+    print("...[done]")
+
+4.把正负样本SVM训练
+
+    print('Training SVM...', end="")
+    svm = cv.ml.SVM_create()
+    svm.setCoef0( 0.0 )
+    svm.setDegree( 3 )
+    svm.setTermCriteria(( cv.TERM_CRITERIA_MAX_ITER + cv.TERM_CRITERIA_EPS,1000, 1e-3) )
+    svm.setGamma(0)
+    svm.setKernel(cv.ml.SVM_LINEAR) 
+    svm.setNu( 0.5 )
+    svm.setP( 0.1 )
+    svm.setC(0.01)
+    svm.setType(cv.ml.SVM_EPS_SVR)
+    svm.train(train_data, cv.ml.ROW_SAMPLE, labels) 
+    print('...[done]')
+
+5.保存训练结果
+
+    hog=cv.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma,
+                            histogramNormType,L2HysThreshold,gammaCorrection,nlevels)
+    sv = svm.getSupportVectors()[0]
+    rho = -svm.getDecisionFunction(0)[0]
+    hog_detector = np.append(sv, rho)
+    hog.setSVMDetector(hog_detector)
+    hog.save('HOGAircraft64x64.xml')
+
+6.用训练好的数据进行目标检测
+
+    print("Testing trained detector...")
+    hog = cv.HOGDescriptor()
+    hog.load("HOGAircraft64x64.xml")
+    img = cv.imread("/Users/hello/Desktop/test.png")
+    found, w = hog.detectMultiScale(img)
+    found_filtered = []
+    for ri, r in enumerate(found):
+        for qi, q in enumerate(found):
+            if ri != qi and inside(r, q):
+                break
+        else:
+            found_filtered.append(r)
+    for x, y, w, h in found_filtered:
+        pad_w, pad_h = 0, 0
+        cv.rectangle(img, (x+pad_w, y+pad_h), (x+w-pad_w, y+h-pad_h), (0, 255, 0), 3)
+    print('%d (%d) found' % (len(found_filtered), len(found)))
+    cv.imshow('testing HOGAircraft64x64.xml', img)
+    ch = cv.waitKey()
+    cv.destroyAllWindows()
+
+
+参考
+
+http://opencv.org/
+http://github.com/opencv
+如果你发现有什么不合理的，或者需要改进的地方，请留言。或者可以通过 328452421#qq.com 联系我，非常感谢。

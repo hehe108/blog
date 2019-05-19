@@ -1,0 +1,287 @@
+最近看到网上介绍cocos2d的资料很多,看了看cocos2d也支持wp7,下载了个 Cocos2d-XNA 安装包,写个小例子玩玩,熟悉下cocos2d
+
+程序很简单,就一个入门级的小游戏，写完后放手机里运行了下效果还可以
+
+开发环境 vs2010，windows phone sdk 7.1
+
+实现方法如下
+
+1.创建好 CCLayer 的子类
+
+2.重写 onEnter  方法添加一些基本按钮 跟一些初始化代码
+
+3.通过schedule方法 控制 坦克 子弹的CCSprite对象
+
+4.根据点击手机屏幕，确定出坦克的方向，根据坦克的方向修改坦克的X，Y轴坐标，来实现坦克的移动
+
+5.通过CCRect的CCRectIntersetsRect函数来进行碰撞检测，实现子弹打击坦克
+
+6.代码完成后 安装zune后  就能把游戏部署到手机里面了 部署前手机要绑定开发者帐号或者学生帐号
+
+具体实现代码
+
+1.在项目里面添加枚举类型
+
+    /// <summary>
+
+    /// 表示方向的的枚举类型
+
+    /// </summary>
+
+    public enum Direction { L, U, D, R, STOP }
+
+2.添加子弹类的相关常量，属性
+
+        /// <summary>
+        /// 子弹X轴的速度，单位PX
+        /// </summary>
+        public static int XSPEED = 10;
+
+        /// <summary>
+        /// 子弹Y轴的速度，单位PX
+        /// </summary>
+        public static int YSPEED = 10;
+
+        /// <summary>
+        /// 子弹的宽度
+        /// </summary>
+        public static int WIDTH = 15;
+
+        /// <summary>
+        /// 子弹的高度
+        /// </summary>
+        public static int HEIGHT = 15;
+
+        /// <summary>
+        /// 子弹的坐标
+        /// </summary>
+        int x, y;
+
+        /// <summary>
+        /// 子弹的方向
+        /// </summary>
+        Direction dir;
+
+        /// <summary>
+        /// 子弹的存活状态
+        /// </summary>
+        private bool live = true;
+
+        /// <summary>
+        /// TankClient窗体实例
+        /// </summary>
+        private TankClient tankClient;
+
+        /// <summary>
+        /// 敌我双方的标记
+        /// </summary>
+        private bool good;
+
+        CCSprite m_missile;
+   
+
+3.添加draw方法来画出子弹
+
+        public void Draw()
+        {
+            if (!live)
+            {
+                tankClient.removeChild(m_missile, true);
+                tankClient.missiles.Remove(this);
+                return;
+            }
+            m_missile.position = new CCPoint(x, y);
+            Move();
+        }
+
+4.添加子弹打击坦克的方法
+        public bool HitTank(Tank t)
+        {
+            //用IntersectsWith来检测两个矩形相碰撞
+            //if (GetRectangle().IntersectsWith((t.GetRectangle())) && t.Live && this.live && this.good != t.Good)
+            if (CCRect.CCRectIntersetsRect(GetRectangle(), t.GetRectangle()) && t.Live && this.live && this.good != t.Good)
+            {
+                t.Live = false;
+                this.live = false;
+                return true;
+            }
+            return false;
+        }
+
+5.添加坦克类相关属性，常量
+      /// <summary>
+        /// 坦克x轴的速度
+        /// </summary>
+        public static int XSPEED = 5;
+
+        /// <summary>
+        /// 坦克y轴的速度
+        /// </summary>
+        public static int YSPEED = 5;
+
+        /// <summary>
+        /// 坦克的宽度
+        /// </summary>
+        public static int WIDTH = 58;
+
+        /// <summary>
+        /// 坦克的高度
+        /// </summary>
+        public static int HEIGHT = 58;
+
+        /// <summary>
+        /// 坦克的坐标
+        /// </summary>
+        private int x, y;
+
+        /// <summary>
+        /// 标记上下左右键是否按下
+        /// </summary>
+        private bool l = false, u = false, r = false, d = false;
+
+        /// <summary>
+        /// 坦克的方向
+        /// </summary>
+        private Direction dir = Direction.STOP;
+
+        /// <summary>
+        /// 坦克炮筒方向
+        /// </summary>
+        private Direction ptDir = Direction.D;
+
+        /// <summary>
+        /// TankClient窗体实例
+        /// </summary>
+        TankClient tankClient;
+
+        /// <summary>
+        /// 标记敌我双方
+        /// </summary>
+        private bool good;
+
+        /// <summary>
+        /// 控制敌人坦克不规则运行时使用
+        /// </summary>
+        private int step = 0;
+
+        /// <summary>
+        /// 标记坦克的存活状态
+        /// </summary>
+        private bool live = true;
+
+        public CCSprite m_tank;
+
+6.在tank类中实现画坦克方法
+     public void Draw()
+        {
+            if (!live)
+            {
+                if (!good)
+                {
+                    tankClient.removeChild(m_tank, true);
+                    tankClient.tanks.Remove(this);
+                }
+                tankClient.removeChild(m_tank, true);
+                return;
+            }
+            if (good)
+            {
+                m_tank.position = new CCPoint(x, y);
+            }
+            else
+            {
+                //g.FillEllipse(Brushes.Blue, x, y, WIDTH, HEIGHT);
+                m_tank.position = new CCPoint(x, y);
+            }
+            //根据炮筒坦克来画出坦克的炮筒
+            switch (ptDir)
+            {
+                case Direction.D:
+                    m_tank.rotation = 0; //旋转精灵控制 炮筒方向
+                    break;
+                case Direction.U:
+                    m_tank.rotation = 180; 
+                    break;
+                case Direction.L:
+                    m_tank.rotation = 270; 
+                    break;
+                case Direction.R:
+                    m_tank.rotation = 90; 
+                    break;
+            }
+            Move();
+        }
+ 
+
+7.tank发子弹的方法
+
+        public Missile Fire()
+        {
+            if (!live) return null;
+           
+            int x = this.x;
+            int y = this.y ;
+            Missile missile = new Missile(x, y, good, ptDir, tankClient);
+            tankClient.missiles.Add(missile);
+            return missile;
+        }
+
+
+ 
+
+8.CCLayer加入坦克
+
+
+            myTank = new Tank(60,420, true, this);
+            for (int i = 0; i < 10; i++)
+            {
+                //添加10量坦克间距 为70
+                tanks.Add(new Tank(50 + 70 * (i + 1), 20, false, this));
+            }
+
+9.CCLayer中调用子弹打击坦克的方法
+
+            for (int i = 0; i < missiles.Count; i++)
+            {
+                Missile m = missiles[i];
+                m.HitTank(myTank);
+                m.HitTanks(tanks);
+                m.Draw();
+            }
+
+10.控制坦克移动射击的部分代码
+        public override void ccTouchEnded(CCTouch touch, CCEvent event_)
+        {
+            myTank.KeyReleased(Microsoft.Xna.Framework.Input.Keys.Down); 
+        }
+        
+        public void hitCallback(CCObject pSender)
+        {
+            myTank.KeyReleased(Microsoft.Xna.Framework.Input.Keys.Enter);
+        }
+ 
+
+11.虚拟机中的运行效果
+
+
+
+ 
+
+ 
+
+ 
+
+
+代码下载 http://download.csdn.net/detail/xiaoxiao108/4545620
+
+
+
+程序中控制坦克方向的代码处理的不是很好,没有通过虚拟摇杆实现。
+
+如果你发现有什么不合理的，需要改进的地方，邮件联系328452421@qq.com（qq常年不在线，邮件联系）  。相互交流 谢谢
+
+ 备注：
+
+1. 相当于reset的作用，不是控制方向的，方向通过点击屏幕控制
+
+2.  发射子弹按钮

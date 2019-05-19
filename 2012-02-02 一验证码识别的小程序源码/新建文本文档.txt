@@ -1,0 +1,135 @@
+前些天，12306这个网站挺火的，看到网上出现了各种各样的登陆、订票插件跟程序。虽然没经历过春运，看到网上各种各样的插件跟工具挺有意思的，下载了几个看了看，都挺不错的。印象中有个java版本的订票程序里面有个验证码识别功能，用tesseract-ocr来识别验证码的，如果验证码不是很复杂识别效果还可以。
+
+
+
+开发环境 vs2008  
+
+开发语言C#
+
+
+
+
+
+使用方法很简单
+
+
+1.下载tesseract 的.net 类库tessnet2_32.dll ，添加引用。   http://www.pixel-technology.com/freeware/tessnet2/
+
+2.下载tesseract 相对应的语言包。 http://code.google.com/p/tesseract-ocr/downloads/list
+
+3.调用tesseract 的方法进行识别。
+
+
+
+
+
+具体代码
+
+1.读取网上的验证码到pictureBox中
+
+            //string url = "http://dynamic.12306.cn/otsweb/passCodeAction.do?rand=lrand";
+            string url = "http://static.baixing.net/pages/mobile.php?c=bcqsFelX%2bvKQcrnIbhyDYQ%3d%3d/2.jpg";
+            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
+            
+            HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+            System.IO.Stream responseStream = response.GetResponseStream();
+            this.pictureBox1.Image = Image.FromStream(responseStream);
+
+2.OCR类
+
+        public class Ocr
+        {
+            public void DumpResult(List<tessnet2.Word> result)
+            {
+                foreach (tessnet2.Word word in result)
+                    //Console.WriteLine("{0} : {1}", word.Confidence, word.Text);
+                    MessageBox.Show(string.Format("{0} : {1}", word.Confidence, word.Text));
+            }
+
+
+            public List<tessnet2.Word> DoOCRNormal(Bitmap image, string lang)
+            {
+                tessnet2.Tesseract ocr = new tessnet2.Tesseract();
+                ocr.Init(null, lang, false);
+                List<tessnet2.Word> result = ocr.DoOCR(image, Rectangle.Empty);
+                DumpResult(result);
+                return result;
+            }
+
+
+            System.Threading.ManualResetEvent m_event;
+
+
+            public void DoOCRMultiThred(Bitmap image, string lang)
+            {
+                tessnet2.Tesseract ocr = new tessnet2.Tesseract();
+                ocr.Init(null, lang, false);
+                // If the OcrDone delegate is not null then this'll be the multithreaded version
+                ocr.OcrDone = new tessnet2.Tesseract.OcrDoneHandler(Finished);
+                // For event to work, must use the multithreaded version
+                ocr.ProgressEvent += new tessnet2.Tesseract.ProgressHandler(ocr_ProgressEvent);
+                m_event = new ManualResetEvent(false);
+                ocr.DoOCR(image, Rectangle.Empty);
+                // Wait here it's finished
+                m_event.WaitOne();
+            }
+
+
+            public void Finished(List<tessnet2.Word> result)
+            {
+                DumpResult(result);
+                m_event.Set();
+            }
+
+
+            void ocr_ProgressEvent(int percent)
+            {
+                Console.WriteLine("{0}% progression", percent);
+            }
+        }
+
+3.调用ocr类的方法识别验证码
+
+            Ocr ocr = new Ocr();
+            //using (Bitmap bmp = new Bitmap(@"D:\temp\ocr\b1.bmp"))
+            using (Bitmap bmp = new Bitmap(this.pictureBox1.Image))
+            {
+                tessnet2.Tesseract tessocr = new tessnet2.Tesseract();
+                tessocr.SetVariable("tessedit_char_whitelist", "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"); 
+                tessocr.Init(null, "eng", false);
+                tessocr.GetThresholdedImage(bmp, Rectangle.Empty).Save(System.Environment.GetEnvironmentVariable("TEMP") + "\\" + Guid.NewGuid().ToString() + ".bmp");
+                // Tessdata directory must be in the directory than this exe
+                //Console.WriteLine("Multithread version");
+                //ocr.DoOCRMultiThred(bmp, "eng");
+                //Console.WriteLine("Normal version");
+               
+                
+                ocr.DoOCRNormal(bmp, "eng");
+            }
+
+
+
+不足之处，如果验证码比较复杂，识别效果不太好，为了提高验证率，可以自己进行训练。具体可参考 http://code.google.com/p/tesseract-ocr/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+如果你发现有什么不合理的，需要改进的地方，或者你有什么更好的实现方法邮件联系328452421@qq.com（qq常年不在线，邮件联系）  。相互交流 谢谢
+ 
+源码下载地址  http://download.csdn.net/detail/xiaoxiao108/4041404
